@@ -194,13 +194,14 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
+    // Start zoomed out and flat — the fly-in will animate to the dramatic 3D view
     const map = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/dark-v11',
       center: [-78.85, 38.72],
-      zoom: isMobile ? 8.5 : 9.5,
-      pitch: isMobile ? 35 : 55,
-      bearing: -20,
+      zoom: 7,
+      pitch: 0,
+      bearing: 0,
       antialias: true,
     });
 
@@ -210,7 +211,7 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
     map.addControl(new mapboxgl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
 
     map.on('load', () => {
-      // 3D terrain
+      // Add DEM terrain source
       map.addSource('mapbox-dem', {
         type: 'raster-dem',
         url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
@@ -218,9 +219,10 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
         maxzoom: 14,
       });
 
+      // Enable 3D terrain with exaggeration
       map.setTerrain({ source: 'mapbox-dem', exaggeration: 2.0 });
 
-      // Atmospheric fog
+      // Atmospheric fog for depth
       map.setFog({
         color: 'rgb(8, 12, 16)',
         'high-color': 'rgb(15, 25, 35)',
@@ -231,7 +233,7 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
 
       setMapLoaded(true);
 
-      // Cinematic fly-in
+      // Cinematic fly-in from the flat starting view to the dramatic pitched 3D view
       map.flyTo({
         center: [-78.85, 38.72],
         zoom: isMobile ? 8.5 : 9.5,
@@ -293,11 +295,11 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
   }, [newResultId, mapLoaded, renderMarkers]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 400 }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 400, borderRadius: '12px', overflow: 'hidden' }}>
       <div
         ref={mapContainer}
         className="map-container"
-        style={{ width: '100%', height: '100%', borderRadius: '12px', overflow: 'hidden' }}
+        style={{ width: '100%', height: '100%' }}
       />
 
       {/* Eleven North attribution badge */}

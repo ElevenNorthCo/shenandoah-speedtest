@@ -99,8 +99,8 @@ function clusterResults(results: SpeedResult[]): TownCluster[] {
   const byTown = new Map<string, SpeedResult[]>();
 
   for (const r of results) {
-    if (!r.lat || !r.lng || !r.town) continue;
-    const key = r.town;
+    if (!r.lat || !r.lng) continue;
+    const key = r.town ?? 'Shenandoah Valley';
     if (!byTown.has(key)) byTown.set(key, []);
     byTown.get(key)!.push(r);
   }
@@ -112,7 +112,7 @@ function clusterResults(results: SpeedResult[]): TownCluster[] {
     const avgDownload = townResults.reduce((s, r) => s + r.download_mbps, 0) / townResults.length;
 
     clusters.push({
-      town,
+      town: town ?? 'Shenandoah Valley',
       lat: avgLat,
       lng: avgLng,
       results: townResults,

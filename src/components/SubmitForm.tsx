@@ -34,16 +34,11 @@ export function SubmitForm({ result, ispInfo, townInfo, detectedCarrier, onSubmi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim()) {
-      setError('Username is required');
-      return;
-    }
-
     setSubmitting(true);
     setError('');
 
     const record: SpeedResultInsert = {
-      username: username.trim().slice(0, 30),
+      username: username.trim().slice(0, 30) || 'Anonymous',
       download_mbps: result.downloadMbps,
       upload_mbps: result.uploadMbps,
       ping_ms: result.pingMs,
@@ -108,16 +103,15 @@ export function SubmitForm({ result, ispInfo, townInfo, detectedCarrier, onSubmi
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
         <div>
           <label style={labelStyle} htmlFor="username">
-            Username *
+            Username <span style={{ color: 'var(--text-ghost)', fontWeight: 400 }}>(optional)</span>
           </label>
           <input
             id="username"
             type="text"
             value={username}
             onChange={e => setUsername(e.target.value)}
-            placeholder="e.g. rsmith_va"
+            placeholder="Anonymous"
             maxLength={30}
-            required
             style={inputStyle}
             onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent-signal)')}
             onBlur={e => (e.currentTarget.style.borderColor = 'var(--border-subtle)')}

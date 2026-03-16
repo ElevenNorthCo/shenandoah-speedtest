@@ -299,11 +299,10 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
     map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'top-right');
     map.addControl(new mapboxgl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
 
-    // ── Style load handler — runs on initial load and after any style reloads ──
-    // Using style.load (not load) ensures we re-add terrain/sky if the style
-    // is ever reloaded internally (e.g. after setTerrain on satellite styles).
-    const onStyleLoad = () => {
-      // Guard against duplicate source errors on repeated style.load events
+    // ── Load handler — fires once after the first full render ──
+    // Must use 'load' (not 'style.load') because style.load can fire before
+    // the camera transform is initialized, causing markers to project to [0,0].
+    const onLoad = () => {
       if (!map.getSource('mapbox-dem')) {
         map.addSource('mapbox-dem', {
           type: 'raster-dem',
@@ -328,7 +327,7 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
         });
       }
 
-      console.log('[SpeedMap] Map style loaded — setting mapReadyRef = true');
+      console.log('[SpeedMap] Map loaded — setting mapReadyRef = true');
       mapReadyRef.current = true;
 
       // Render any results that arrived before the map was ready,
@@ -342,10 +341,10 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
       // Fly-in is handled by IntersectionObserver below, not here
     };
 
-    map.on('style.load', onStyleLoad);
+    map.on('load', onLoad);
 
     return () => {
-      map.off('style.load', onStyleLoad);
+      map.off('load', onLoad);
       markersRef.current.forEach(m => m.remove());
       map.remove();
       mapRef.current = null;

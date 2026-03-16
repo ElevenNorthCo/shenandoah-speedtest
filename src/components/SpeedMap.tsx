@@ -174,7 +174,7 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const resultsRef = useRef<SpeedResult[]>([]);
   const mapReadyRef = useRef(false);          // true once style + terrain loaded
-  const pendingHighlightRef = useRef<string | undefined>(); // newResultId that arrived before map ready
+  const pendingHighlightRef = useRef<string | undefined>(undefined); // newResultId that arrived before map ready
   const flyInFiredRef = useRef(false);        // ensures fly-in only happens once
   const isMobileRef = useRef(window.innerWidth < 768);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);

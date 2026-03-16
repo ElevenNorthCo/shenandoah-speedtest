@@ -107,11 +107,37 @@ function buildPopupHTML(cluster: TownCluster): string {
   `;
 }
 
+// Supabase returns numeric(9,6) columns as strings in some client versions.
+// Always coerce to Number() before any arithmetic to avoid NaN from string concat.
+function toNum(v: number | string | null | undefined): number {
+  return Number(v);
+}
+
+// Valid coordinate ranges for the Shenandoah Valley / surrounding region
+function isValidCoord(lat: number, lng: number): boolean {
+  return (
+    lat >= 37.5 && lat <= 40.0 &&
+    lng >= -80.5 && lng <= -77.0
+  );
+}
+
 function clusterResults(results: SpeedResult[]): TownCluster[] {
   const byTown = new Map<string, SpeedResult[]>();
 
   for (const r of results) {
-    if (!r.lat || !r.lng) continue;
+    const lat = toNum(r.lat);
+    const lng = toNum(r.lng);
+
+    if (!isFinite(lat) || !isFinite(lng) || lat === 0 || lng === 0) {
+      console.warn(`[SpeedMap] Skipping result ${r.id} — invalid coords lat:${String(r.lat)} lng:${String(r.lng)}`);
+      continue;
+    }
+
+    if (!isValidCoord(lat, lng)) {
+      console.warn(`[SpeedMap] Skipping result ${r.id} — coords outside Virginia lat:${lat} lng:${lng}`);
+      continue;
+    }
+
     const key = r.town ?? 'Shenandoah Valley';
     if (!byTown.has(key)) byTown.set(key, []);
     byTown.get(key)!.push(r);
@@ -119,9 +145,10 @@ function clusterResults(results: SpeedResult[]): TownCluster[] {
 
   const clusters: TownCluster[] = [];
   for (const [town, townResults] of byTown.entries()) {
-    const avgLat = townResults.reduce((s, r) => s + (r.lat ?? 0), 0) / townResults.length;
-    const avgLng = townResults.reduce((s, r) => s + (r.lng ?? 0), 0) / townResults.length;
-    const avgDownload = townResults.reduce((s, r) => s + r.download_mbps, 0) / townResults.length;
+    // Use Number() explicitly — avoids NaN when Supabase returns numeric as string
+    const avgLat = townResults.reduce((s, r) => s + toNum(r.lat), 0) / townResults.length;
+    const avgLng = townResults.reduce((s, r) => s + toNum(r.lng), 0) / townResults.length;
+    const avgDownload = townResults.reduce((s, r) => s + toNum(r.download_mbps), 0) / townResults.length;
 
     clusters.push({
       town,
@@ -175,10 +202,17 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
     markersRef.current = [];
 
     const clusters = clusterResults(results);
-    console.log(`[SpeedMap] Rendering ${clusters.length} clusters from ${results.length} results`);
+    console.log(`[SpeedMap] ${results.length} results → ${clusters.length} valid clusters`);
+
+    // Log first result raw from Supabase for coordinate debugging
+    if (results.length > 0) {
+      const sample = results[0];
+      console.log(`[SpeedMap] Sample row — id:${sample.id} town:${sample.town ?? 'null'} lat(raw):${String(sample.lat)} lng(raw):${String(sample.lng)} lat(parsed):${toNum(sample.lat)} lng(parsed):${toNum(sample.lng)}`);
+    }
 
     for (const cluster of clusters) {
-      console.log(`[SpeedMap] Cluster: ${cluster.town} — lat:${cluster.lat} lng:${cluster.lng} count:${cluster.count}`);
+      // Mapbox expects [longitude, latitude] — lng first, lat second
+      console.log(`[SpeedMap] Pin → ${cluster.town} [lng:${cluster.lng}, lat:${cluster.lat}] count:${cluster.count}`);
 
       const isNew = highlightId
         ? cluster.results.some(r => r.id === highlightId)
@@ -196,8 +230,9 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
       const popup = new mapboxgl.Popup({ offset: 20, closeButton: true })
         .setHTML(buildPopupHTML(cluster));
 
+      // Mapbox order: [longitude, latitude]
       const marker = new mapboxgl.Marker({ element: el })
-        .setLngLat([cluster.lng, cluster.lat])
+        .setLngLat([Number(cluster.lng), Number(cluster.lat)])
         .setPopup(popup)
         .addTo(map);
 
@@ -353,10 +388,12 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
 
         // Fly to the new result with celebration zoom
         const newResult = data.find(r => r.id === newResultId);
-        if (newResult?.lat && newResult?.lng && mapRef.current) {
-          console.log(`[SpeedMap] Flying to new result at ${newResult.lat}, ${newResult.lng}`);
+        const newLat = toNum(newResult?.lat);
+        const newLng = toNum(newResult?.lng);
+        if (isFinite(newLat) && isFinite(newLng) && newLat !== 0 && mapRef.current) {
+          console.log(`[SpeedMap] Flying to new result — [lng:${newLng}, lat:${newLat}]`);
           mapRef.current.flyTo({
-            center: [newResult.lng, newResult.lat],
+            center: [newLng, newLat],
             zoom: 12,
             pitch: 45,
             duration: 2500,

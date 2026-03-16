@@ -21,10 +21,17 @@ function getSignalColor(downloadMbps: number): string {
 }
 
 function createPinElement(color: string, count: number, isNew = false): HTMLDivElement {
-  const el = document.createElement('div');
+  // Mapbox Marker applies `transform: translate(…)` to the root element for
+  // positioning.  CSS animations that set `transform` override the inline
+  // style and snap the marker to [0,0].  To avoid this, we use a plain
+  // wrapper as the Marker element and put the animated pin inside it.
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'display: flex; align-items: center; justify-content: center;';
+
+  const pin = document.createElement('div');
   const size = count > 1 ? Math.min(14 + count * 2, 28) : 14;
-  el.className = `speed-pin${isNew ? ' new-pin' : ''}`;
-  el.style.cssText = `
+  pin.className = `speed-pin${isNew ? ' new-pin' : ''}`;
+  pin.style.cssText = `
     width: ${size}px;
     height: ${size}px;
     border-radius: 50%;
@@ -40,14 +47,15 @@ function createPinElement(color: string, count: number, isNew = false): HTMLDivE
     font-size: 8px;
     font-weight: 700;
     color: rgba(0,0,0,0.8);
-    position: relative;
   `;
   if (count > 1) {
-    el.textContent = String(count);
+    pin.textContent = String(count);
   }
-  el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.3)'; });
-  el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; });
-  return el;
+  pin.addEventListener('mouseenter', () => { pin.style.transform = 'scale(1.3)'; });
+  pin.addEventListener('mouseleave', () => { pin.style.transform = 'scale(1)'; });
+
+  wrapper.appendChild(pin);
+  return wrapper;
 }
 
 function createCelebrationRing(color: string): HTMLDivElement {
@@ -224,7 +232,8 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
 
       if (isNew) {
         const ring = createCelebrationRing(color);
-        el.appendChild(ring);
+        // Append to the inner pin element, not the Mapbox wrapper
+        (el.firstElementChild ?? el).appendChild(ring);
         setTimeout(() => ring.remove(), 1400);
       }
 
@@ -299,12 +308,7 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
     map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'top-right');
     map.addControl(new mapboxgl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
 
-    // ── Load handler — set up terrain and sky, then wait for idle to add markers.
-    // setTerrain() changes how Mapbox projects lng/lat → screen pixels. Markers
-    // added immediately after setTerrain() project to [0,0] because the DEM
-    // tiles haven't loaded and the projection hasn't recalculated yet.
-    // The 'idle' event fires once all terrain tiles are loaded and the map is
-    // fully rendered, so marker projection is correct at that point.
+    // ── Load handler — set up terrain, sky, then render markers.
     const onLoad = () => {
       if (!map.getSource('mapbox-dem')) {
         map.addSource('mapbox-dem', {
@@ -330,28 +334,20 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
         });
       }
 
-      console.log('[SpeedMap] Map loaded — waiting for idle to add markers');
-    };
-
-    // Markers are deferred to 'idle' so DEM terrain tiles are loaded first
-    const onIdle = () => {
-      if (mapReadyRef.current) return; // only run once
-      console.log('[SpeedMap] Map idle — terrain ready, setting mapReadyRef = true');
+      console.log('[SpeedMap] Map loaded — setting mapReadyRef = true');
       mapReadyRef.current = true;
 
       if (resultsRef.current.length > 0) {
-        console.log('[SpeedMap] Rendering pre-fetched markers now');
+        console.log('[SpeedMap] Map loaded with pre-fetched results — rendering markers now');
         renderMarkers(resultsRef.current, pendingHighlightRef.current);
         pendingHighlightRef.current = undefined;
       }
     };
 
     map.on('load', onLoad);
-    map.on('idle', onIdle);
 
     return () => {
       map.off('load', onLoad);
-      map.off('idle', onIdle);
       markersRef.current.forEach(m => m.remove());
       map.remove();
       mapRef.current = null;

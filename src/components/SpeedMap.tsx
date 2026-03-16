@@ -40,21 +40,33 @@ function createPinElement(color: string, count: number, isNew = false): HTMLDivE
     font-size: 8px;
     font-weight: 700;
     color: rgba(0,0,0,0.8);
+    position: relative;
   `;
   if (count > 1) {
     el.textContent = String(count);
   }
-  el.addEventListener('mouseenter', () => {
-    el.style.transform = 'scale(1.3)';
-  });
-  el.addEventListener('mouseleave', () => {
-    el.style.transform = 'scale(1)';
-  });
+  el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.3)'; });
+  el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; });
   return el;
 }
 
+function createCelebrationRing(color: string): HTMLDivElement {
+  const ring = document.createElement('div');
+  ring.style.cssText = `
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid ${color};
+    animation: celebrationRing 1.2s ease-out forwards;
+    pointer-events: none;
+  `;
+  return ring;
+}
+
 function buildPopupHTML(cluster: TownCluster): string {
-  const topResults = cluster.results
+  const topResults = [...cluster.results]
     .sort((a, b) => b.download_mbps - a.download_mbps)
     .slice(0, 3);
 
@@ -112,7 +124,7 @@ function clusterResults(results: SpeedResult[]): TownCluster[] {
     const avgDownload = townResults.reduce((s, r) => s + r.download_mbps, 0) / townResults.length;
 
     clusters.push({
-      town: town ?? 'Shenandoah Valley',
+      town,
       lat: avgLat,
       lng: avgLng,
       results: townResults,
@@ -129,30 +141,45 @@ interface SpeedMapProps {
 }
 
 export function SpeedMap({ newResultId }: SpeedMapProps) {
-  const mapContainer = useRef<HTMLDivElement>(null);
+  const outerRef = useRef<HTMLDivElement>(null);       // observed for intersection
+  const mapContainer = useRef<HTMLDivElement>(null);   // actual Mapbox container
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
-  const popupRef = useRef<mapboxgl.Popup | null>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const resultsRef = useRef<SpeedResult[]>([]);
+  const mapReadyRef = useRef(false);     // true once style + terrain loaded
+  const flyInFiredRef = useRef(false);   // ensures fly-in only happens once
+  const isMobileRef = useRef(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768);
+    const handler = () => {
+      const mobile = window.innerWidth < 768;
+      isMobileRef.current = mobile;
+      setIsMobile(mobile);
+    };
     window.addEventListener('resize', handler);
     return () => window.removeEventListener('resize', handler);
   }, []);
 
+  // ── Render markers ──────────────────────────────────────────────────────────
+  // Called whenever we have BOTH map ready AND results loaded.
+  // Decoupled from React state to avoid stale closure issues.
   const renderMarkers = useCallback((results: SpeedResult[], highlightId?: string) => {
-    if (!mapRef.current) return;
+    const map = mapRef.current;
+    if (!map || !mapReadyRef.current) {
+      console.log('[SpeedMap] renderMarkers skipped — map not ready yet');
+      return;
+    }
 
-    // Remove existing markers
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
 
     const clusters = clusterResults(results);
+    console.log(`[SpeedMap] Rendering ${clusters.length} clusters from ${results.length} results`);
 
     for (const cluster of clusters) {
+      console.log(`[SpeedMap] Cluster: ${cluster.town} — lat:${cluster.lat} lng:${cluster.lng} count:${cluster.count}`);
+
       const isNew = highlightId
         ? cluster.results.some(r => r.id === highlightId)
         : false;
@@ -160,21 +187,28 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
       const color = getSignalColor(cluster.avgDownload);
       const el = createPinElement(color, cluster.count, isNew);
 
+      if (isNew) {
+        const ring = createCelebrationRing(color);
+        el.appendChild(ring);
+        setTimeout(() => ring.remove(), 1400);
+      }
+
       const popup = new mapboxgl.Popup({ offset: 20, closeButton: true })
         .setHTML(buildPopupHTML(cluster));
 
       const marker = new mapboxgl.Marker({ element: el })
         .setLngLat([cluster.lng, cluster.lat])
         .setPopup(popup)
-        .addTo(mapRef.current!);
+        .addTo(map);
 
       markersRef.current.push(marker);
     }
   }, []);
 
-  // Load initial data
+  // ── Fetch results from Supabase ──────────────────────────────────────────────
   const loadResults = useCallback(async () => {
-    const { data } = await supabase
+    console.log('[SpeedMap] Fetching results from Supabase...');
+    const { data, error } = await supabase
       .from('speed_results')
       .select('*')
       .not('lat', 'is', null)
@@ -182,19 +216,39 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
       .order('created_at', { ascending: false })
       .limit(200);
 
+    if (error) {
+      console.error('[SpeedMap] Supabase fetch error:', error);
+      return;
+    }
+
+    console.log(`[SpeedMap] Fetched ${data?.length ?? 0} results with coordinates`);
     if (data) {
       resultsRef.current = data;
-      if (mapLoaded) {
-        renderMarkers(data);
-      }
+      // Render immediately if map is already ready, otherwise renderMarkers
+      // will be called from the load handler once the map catches up.
+      renderMarkers(data);
     }
-  }, [mapLoaded, renderMarkers]);
+  }, [renderMarkers]);
 
-  // Initialize map
+  // ── Cinematic fly-in (fires once when map scrolls into view) ────────────────
+  const triggerFlyIn = useCallback(() => {
+    if (flyInFiredRef.current || !mapRef.current) return;
+    flyInFiredRef.current = true;
+    const mobile = isMobileRef.current;
+    mapRef.current.flyTo({
+      center: [-78.85, 38.72],
+      zoom: mobile ? 8.5 : 9.5,
+      pitch: mobile ? 35 : 55,
+      bearing: -20,
+      duration: 3500,
+      easing: (t) => t * (2 - t),
+    });
+  }, []);
+
+  // ── Initialize map ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
-    // Start zoomed out and flat — the fly-in will animate to the dramatic 3D view
     const map = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/dark-v11',
@@ -206,7 +260,6 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
     });
 
     mapRef.current = map;
-
     map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'top-right');
     map.addControl(new mapboxgl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
 
@@ -219,10 +272,8 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
         maxzoom: 14,
       });
 
-      // Enable 3D terrain with exaggeration
       map.setTerrain({ source: 'mapbox-dem', exaggeration: 2.0 });
 
-      // Atmospheric fog for depth
       map.setFog({
         color: 'rgb(8, 12, 16)',
         'high-color': 'rgb(15, 25, 35)',
@@ -231,41 +282,59 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
         'star-intensity': 0.6,
       });
 
-      setMapLoaded(true);
+      console.log('[SpeedMap] Map style loaded — setting mapReadyRef = true');
+      mapReadyRef.current = true;
 
-      // Cinematic fly-in from the flat starting view to the dramatic pitched 3D view
-      map.flyTo({
-        center: [-78.85, 38.72],
-        zoom: isMobile ? 8.5 : 9.5,
-        pitch: isMobile ? 35 : 55,
-        bearing: -20,
-        duration: 3500,
-        easing: (t) => t * (2 - t),
-      });
+      // Render any results that arrived before the map was ready
+      if (resultsRef.current.length > 0) {
+        console.log('[SpeedMap] Map loaded with pre-fetched results — rendering markers now');
+        renderMarkers(resultsRef.current);
+      }
+
+      // Fly-in is handled by IntersectionObserver below, not here
     });
 
     return () => {
       markersRef.current.forEach(m => m.remove());
-      popupRef.current?.remove();
       map.remove();
       mapRef.current = null;
+      mapReadyRef.current = false;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load results once map is ready
+  // ── Fetch results on mount (independent of map readiness) ───────────────────
   useEffect(() => {
-    if (mapLoaded) {
-      void loadResults();
-    }
-  }, [mapLoaded, loadResults]);
+    void loadResults();
+  }, [loadResults]);
 
-  // Handle new result
+  // ── IntersectionObserver — trigger fly-in when map scrolls into view ────────
   useEffect(() => {
-    if (!newResultId || !mapLoaded) return;
+    const el = outerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            triggerFlyIn();
+            observer.disconnect(); // only ever fire once
+          }
+        }
+      },
+      { threshold: 0.3 } // 30% of the map must be visible
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [triggerFlyIn]);
+
+  // ── Handle new result submitted ──────────────────────────────────────────────
+  useEffect(() => {
+    if (!newResultId) return;
 
     const refresh = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('speed_results')
         .select('*')
         .not('lat', 'is', null)
@@ -273,18 +342,24 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
         .order('created_at', { ascending: false })
         .limit(200);
 
+      if (error) {
+        console.error('[SpeedMap] Refresh fetch error:', error);
+        return;
+      }
+
       if (data) {
         resultsRef.current = data;
         renderMarkers(data, newResultId);
 
-        // Fly to the new result
+        // Fly to the new result with celebration zoom
         const newResult = data.find(r => r.id === newResultId);
         if (newResult?.lat && newResult?.lng && mapRef.current) {
+          console.log(`[SpeedMap] Flying to new result at ${newResult.lat}, ${newResult.lng}`);
           mapRef.current.flyTo({
             center: [newResult.lng, newResult.lat],
-            zoom: 11,
+            zoom: 12,
             pitch: 45,
-            duration: 2000,
+            duration: 2500,
             easing: (t) => t * (2 - t),
           });
         }
@@ -292,10 +367,13 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
     };
 
     void refresh();
-  }, [newResultId, mapLoaded, renderMarkers]);
+  }, [newResultId, renderMarkers]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 400, borderRadius: '12px', overflow: 'hidden' }}>
+    <div
+      ref={outerRef}
+      style={{ position: 'relative', width: '100%', height: '100%', minHeight: 400, borderRadius: '12px', overflow: 'hidden' }}
+    >
       <div
         ref={mapContainer}
         className="map-container"
@@ -330,21 +408,36 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
         </a>
       </div>
 
-      {/* Mobile hint */}
-      {isMobile && !mapLoaded && (
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          color: 'var(--text-secondary)',
-          fontFamily: "'Sora', sans-serif",
-          fontSize: '0.8rem',
-          pointerEvents: 'none',
-        }}>
-          Loading map...
+      {/* Mobile loading hint */}
+      {isMobile && (
+        <div
+          id="map-mobile-hint"
+          style={{
+            position: 'absolute',
+            bottom: '12px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(8,12,16,0.7)',
+            color: 'var(--text-secondary)',
+            fontFamily: "'Sora', sans-serif",
+            fontSize: '0.7rem',
+            padding: '4px 12px',
+            borderRadius: '999px',
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+            animation: 'fadeIn 0.5s ease 1s both, fadeIn 0.5s ease 4s reverse both',
+          }}
+        >
+          Drag to explore
         </div>
       )}
+
+      <style>{`
+        @keyframes celebrationRing {
+          0%   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+          100% { transform: translate(-50%, -50%) scale(5); opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }

@@ -1,7 +1,16 @@
 import { useState, useCallback, useRef } from 'react';
 import { runSpeedTest, type SpeedTestResult, type TestPhase, type TestProgress } from '../lib/speedtest';
 import { detectIsp, matchCarrier, type IspInfo } from '../lib/ispDetect';
-import { reverseGeocode, type TownInfo } from '../lib/geocode';
+import { reverseGeocode, snapToNearestTown, type TownInfo } from '../lib/geocode';
+
+// Geographic center of the Shenandoah Valley — last-resort fallback
+// so every result always has a coordinate and appears on the map
+const VALLEY_CENTER: TownInfo = {
+  town: 'Shenandoah Valley',
+  region: 'VA',
+  lat: 38.72,
+  lng: -78.85,
+};
 
 export interface SpeedTestState {
   phase: TestPhase;
@@ -65,11 +74,17 @@ export function useSpeedTest() {
       // Get ISP and location results
       const [position, ispInfo] = await Promise.all([locationPromise, ispPromise]);
 
-      let townInfo: TownInfo | null = null;
+      let townInfo: TownInfo;
       if (position) {
+        // Best source: browser GPS
         townInfo = await reverseGeocode(position.coords.latitude, position.coords.longitude);
       } else if (ispInfo.lat && ispInfo.lng) {
+        // Good fallback: ISP-detected location
         townInfo = await reverseGeocode(ispInfo.lat, ispInfo.lng);
+      } else {
+        // Last resort: snap to nearest known Valley town using a central coordinate.
+        // This ensures every result has a lat/lng and shows on the map.
+        townInfo = snapToNearestTown(VALLEY_CENTER.lat, VALLEY_CENTER.lng);
       }
 
       const detectedCarrier = matchCarrier(ispInfo.isp);

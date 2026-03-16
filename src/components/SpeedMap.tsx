@@ -173,8 +173,9 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const resultsRef = useRef<SpeedResult[]>([]);
-  const mapReadyRef = useRef(false);     // true once style + terrain loaded
-  const flyInFiredRef = useRef(false);   // ensures fly-in only happens once
+  const mapReadyRef = useRef(false);          // true once style + terrain loaded
+  const pendingHighlightRef = useRef<string | undefined>(); // newResultId that arrived before map ready
+  const flyInFiredRef = useRef(false);        // ensures fly-in only happens once
   const isMobileRef = useRef(window.innerWidth < 768);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -286,11 +287,11 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
 
     const map = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
+      style: 'mapbox://styles/mapbox/satellite-streets-v12',
       center: [-78.85, 38.72],
       zoom: 7,
-      pitch: 0,
-      bearing: 0,
+      pitch: 45,
+      bearing: -17.6,
       antialias: true,
     });
 
@@ -298,38 +299,53 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
     map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'top-right');
     map.addControl(new mapboxgl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
 
-    map.on('load', () => {
-      // Add DEM terrain source
-      map.addSource('mapbox-dem', {
-        type: 'raster-dem',
-        url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
-        tileSize: 512,
-        maxzoom: 14,
-      });
+    // ── Style load handler — runs on initial load and after any style reloads ──
+    // Using style.load (not load) ensures we re-add terrain/sky if the style
+    // is ever reloaded internally (e.g. after setTerrain on satellite styles).
+    const onStyleLoad = () => {
+      // Guard against duplicate source errors on repeated style.load events
+      if (!map.getSource('mapbox-dem')) {
+        map.addSource('mapbox-dem', {
+          type: 'raster-dem',
+          url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+          tileSize: 512,
+          maxzoom: 14,
+        });
+      }
 
-      map.setTerrain({ source: 'mapbox-dem', exaggeration: 2.0 });
+      map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
 
-      map.setFog({
-        color: 'rgb(8, 12, 16)',
-        'high-color': 'rgb(15, 25, 35)',
-        'horizon-blend': 0.4,
-        'space-color': 'rgb(4, 8, 12)',
-        'star-intensity': 0.6,
-      });
+      // Sky / atmosphere layer for the angled 3D perspective
+      if (!map.getLayer('sky')) {
+        map.addLayer({
+          id: 'sky',
+          type: 'sky',
+          paint: {
+            'sky-type': 'atmosphere',
+            'sky-atmosphere-sun': [0.0, 90.0],
+            'sky-atmosphere-sun-intensity': 15,
+          },
+        });
+      }
 
       console.log('[SpeedMap] Map style loaded — setting mapReadyRef = true');
       mapReadyRef.current = true;
 
-      // Render any results that arrived before the map was ready
+      // Render any results that arrived before the map was ready,
+      // including any pending highlight from a newResultId that raced ahead
       if (resultsRef.current.length > 0) {
         console.log('[SpeedMap] Map loaded with pre-fetched results — rendering markers now');
-        renderMarkers(resultsRef.current);
+        renderMarkers(resultsRef.current, pendingHighlightRef.current);
+        pendingHighlightRef.current = undefined;
       }
 
       // Fly-in is handled by IntersectionObserver below, not here
-    });
+    };
+
+    map.on('style.load', onStyleLoad);
 
     return () => {
+      map.off('style.load', onStyleLoad);
       markersRef.current.forEach(m => m.remove());
       map.remove();
       mapRef.current = null;
@@ -367,6 +383,12 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
   // ── Handle new result submitted ──────────────────────────────────────────────
   useEffect(() => {
     if (!newResultId) return;
+
+    // If map isn't ready yet, stash the highlight ID — onStyleLoad will use it
+    // once the style finishes loading.
+    if (!mapReadyRef.current) {
+      pendingHighlightRef.current = newResultId;
+    }
 
     const refresh = async () => {
       const { data, error } = await supabase

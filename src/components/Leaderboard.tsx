@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useLeaderboard, type LeaderboardTab } from '../hooks/useLeaderboard';
 import type { SpeedResult } from '../lib/supabase';
 
-function getRankDisplay(rank: number): React.ReactNode {
-  if (rank === 1) return <span style={{ fontSize: '1rem' }}>🥇</span>;
-  if (rank === 2) return <span style={{ fontSize: '1rem' }}>🥈</span>;
-  if (rank === 3) return <span style={{ fontSize: '1rem' }}>🥉</span>;
+function getRankDisplay(rank: number, isRecent: boolean): React.ReactNode {
+  if (!isRecent) {
+    if (rank === 1) return <span style={{ fontSize: '1rem' }}>🥇</span>;
+    if (rank === 2) return <span style={{ fontSize: '1rem' }}>🥈</span>;
+    if (rank === 3) return <span style={{ fontSize: '1rem' }}>🥉</span>;
+  }
   return <span style={{ fontFamily: "'Space Mono',monospace", fontSize: '0.75rem', color: 'var(--text-ghost)' }}>{rank}</span>;
 }
 
@@ -41,7 +43,8 @@ interface LeaderboardRowProps {
 
 function LeaderboardRow({ result, rank, isNew, activeTab }: LeaderboardRowProps) {
   const primaryMbps = activeTab === 'upload' ? result.upload_mbps : result.download_mbps;
-  const borderColor = getBorderColor(rank);
+  const isRecent = activeTab === 'recent';
+  const borderColor = isRecent ? 'transparent' : getBorderColor(rank);
 
   return (
     <div
@@ -55,7 +58,7 @@ function LeaderboardRow({ result, rank, isNew, activeTab }: LeaderboardRowProps)
         borderLeft: borderColor !== 'transparent' ? `3px solid ${borderColor}` : '3px solid transparent',
         borderBottom: '1px solid var(--border-subtle)',
         transition: 'background 0.2s ease',
-        borderRadius: rank <= 3 ? '0 4px 4px 0' : 0,
+        borderRadius: (!isRecent && rank <= 3) ? '0 4px 4px 0' : 0,
         cursor: 'default',
       }}
       onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-elevated)'}
@@ -63,7 +66,7 @@ function LeaderboardRow({ result, rank, isNew, activeTab }: LeaderboardRowProps)
     >
       {/* Rank */}
       <div style={{ textAlign: 'center', minWidth: 0 }}>
-        {getRankDisplay(rank)}
+        {getRankDisplay(rank, isRecent)}
       </div>
 
       {/* Username */}

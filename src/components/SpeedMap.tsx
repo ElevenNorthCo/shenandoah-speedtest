@@ -299,9 +299,12 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
     map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'top-right');
     map.addControl(new mapboxgl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
 
-    // ── Load handler — fires once after the first full render ──
-    // Must use 'load' (not 'style.load') because style.load can fire before
-    // the camera transform is initialized, causing markers to project to [0,0].
+    // ── Load handler — set up terrain and sky, then wait for idle to add markers.
+    // setTerrain() changes how Mapbox projects lng/lat → screen pixels. Markers
+    // added immediately after setTerrain() project to [0,0] because the DEM
+    // tiles haven't loaded and the projection hasn't recalculated yet.
+    // The 'idle' event fires once all terrain tiles are loaded and the map is
+    // fully rendered, so marker projection is correct at that point.
     const onLoad = () => {
       if (!map.getSource('mapbox-dem')) {
         map.addSource('mapbox-dem', {
@@ -327,24 +330,28 @@ export function SpeedMap({ newResultId }: SpeedMapProps) {
         });
       }
 
-      console.log('[SpeedMap] Map loaded — setting mapReadyRef = true');
+      console.log('[SpeedMap] Map loaded — waiting for idle to add markers');
+    };
+
+    // Markers are deferred to 'idle' so DEM terrain tiles are loaded first
+    const onIdle = () => {
+      if (mapReadyRef.current) return; // only run once
+      console.log('[SpeedMap] Map idle — terrain ready, setting mapReadyRef = true');
       mapReadyRef.current = true;
 
-      // Render any results that arrived before the map was ready,
-      // including any pending highlight from a newResultId that raced ahead
       if (resultsRef.current.length > 0) {
-        console.log('[SpeedMap] Map loaded with pre-fetched results — rendering markers now');
+        console.log('[SpeedMap] Rendering pre-fetched markers now');
         renderMarkers(resultsRef.current, pendingHighlightRef.current);
         pendingHighlightRef.current = undefined;
       }
-
-      // Fly-in is handled by IntersectionObserver below, not here
     };
 
     map.on('load', onLoad);
+    map.on('idle', onIdle);
 
     return () => {
       map.off('load', onLoad);
+      map.off('idle', onIdle);
       markersRef.current.forEach(m => m.remove());
       map.remove();
       mapRef.current = null;

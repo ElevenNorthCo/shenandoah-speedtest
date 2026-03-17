@@ -4,8 +4,8 @@ import 'cesium/Build/Cesium/Widgets/widgets.css';
 import { supabase, type SpeedResult } from '../lib/supabase';
 import { VALLEY_TOWNS } from '../lib/geocode';
 
-// Use CesiumJS built-in default Ion token for Bing Maps aerial imagery
-// No separate API key needed — this is included with the open-source library
+// Set Cesium Ion access token for World Imagery + World Terrain
+Cesium.Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_ION_TOKEN as string;
 
 // ── Types ───────────────────────────────────────────────────────────────────────
 
@@ -395,7 +395,10 @@ export function CesiumGlobe({ newResultId }: CesiumGlobeProps) {
     if (!cesiumContainerRef.current || viewerRef.current) return;
 
     const viewer = new Cesium.Viewer(cesiumContainerRef.current, {
-      // Default Bing Maps aerial imagery (bundled with CesiumJS via Ion)
+      // Cesium World Imagery from Ion (asset 2) — sharper satellite tiles
+      baseLayer: Cesium.ImageryLayer.fromProviderAsync(
+        Cesium.IonImageryProvider.fromAssetId(2)
+      ),
       animation: false,
       timeline: false,
       baseLayerPicker: false,
@@ -406,7 +409,7 @@ export function CesiumGlobe({ newResultId }: CesiumGlobeProps) {
       infoBox: false,
       navigationHelpButton: false,
       fullscreenButton: false,
-      // Enable Cesium World Terrain for real mountain elevation
+      // Cesium World Terrain from Ion — vertex normals for lighting, water mask
       terrain: Cesium.Terrain.fromWorldTerrain({
         requestVertexNormals: true,
         requestWaterMask: true,
@@ -415,15 +418,24 @@ export function CesiumGlobe({ newResultId }: CesiumGlobeProps) {
 
     // Dark background outside the globe to match theme
     viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#080C10');
-    viewer.scene.globe.enableLighting = false;
 
-    // Keep sky atmosphere for the blue horizon glow
+    // Enable globe lighting — sun casts natural shadows on mountains
+    viewer.scene.globe.enableLighting = true;
+
+    // Fix sun position to mid-morning over Virginia so terrain is always
+    // well-lit regardless of the user's actual time of day
+    viewer.clock.shouldAnimate = false;
+    viewer.clock.currentTime = Cesium.JulianDate.fromDate(
+      new Date('2026-06-21T15:00:00Z') // ~11am EST, summer solstice = high sun angle
+    );
+
+    // Sky atmosphere for the blue horizon glow
     if (viewer.scene.skyAtmosphere) {
       viewer.scene.skyAtmosphere.show = true;
     }
 
-    // Terrain exaggeration — makes mountain ridges more dramatic
-    viewer.scene.verticalExaggeration = 1.8;
+    // Terrain exaggeration — makes Shenandoah Valley ridgelines pop on mobile
+    viewer.scene.verticalExaggeration = 1.5;
 
     // Disable depth test for labels/billboards so they don't clip into terrain
     viewer.scene.globe.depthTestAgainstTerrain = false;

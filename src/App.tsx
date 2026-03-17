@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Header } from './components/Header';
 import { SpeedGauge } from './components/SpeedGauge';
 import { ResultCard } from './components/ResultCard';
-import { SpeedMap } from './components/SpeedMap';
+import { CesiumGlobe } from './components/CesiumGlobe';
 import { Leaderboard } from './components/Leaderboard';
 import { Footer } from './components/Footer';
 import { useSpeedTest } from './hooks/useSpeedTest';
@@ -156,7 +156,7 @@ function App() {
             padding: '16px',
             height: '100%',
           }}>
-            <SpeedMap newResultId={newResultId} />
+            <CesiumGlobe newResultId={newResultId} />
           </div>
 
           <div

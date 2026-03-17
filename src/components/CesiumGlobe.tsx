@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import { supabase, type SpeedResult } from '../lib/supabase';
+import { VALLEY_TOWNS } from '../lib/geocode';
 
 // Use CesiumJS built-in default Ion token for Bing Maps aerial imagery
 // No separate API key needed — this is included with the open-source library
@@ -167,6 +168,15 @@ function buildPopupHTML(cluster: TownCluster): string {
   `;
 }
 
+// ── Town label config ───────────────────────────────────────────────────────────
+
+// Major towns to label (subset of VALLEY_TOWNS to avoid clutter)
+const LABELED_TOWNS = new Set([
+  'Winchester', 'Front Royal', 'Strasburg', 'Woodstock', 'New Market',
+  'Luray', 'Harrisonburg', 'Staunton', 'Waynesboro', 'Bridgewater',
+  'Broadway', 'Elkton', 'Edinburg', 'Mount Jackson', 'Moorefield',
+]);
+
 // ── Component ───────────────────────────────────────────────────────────────────
 
 export function CesiumGlobe({ newResultId }: CesiumGlobeProps) {
@@ -176,7 +186,9 @@ export function CesiumGlobe({ newResultId }: CesiumGlobeProps) {
   const resultsRef = useRef<SpeedResult[]>([]);
   const viewerReadyRef = useRef(false);
   const pendingHighlightRef = useRef<string | undefined>(undefined);
+  const townLabelsRef = useRef<Cesium.Entity[]>([]);
   const flyInFiredRef = useRef(false);
+  const spinCallbackRef = useRef<Cesium.Event.RemoveCallback | null>(null);
   const isMobileRef = useRef(window.innerWidth < 768);
   const handlerRef = useRef<Cesium.ScreenSpaceEventHandler | null>(null);
   const preRenderRef = useRef<Cesium.Event.RemoveCallback | null>(null);
@@ -195,12 +207,52 @@ export function CesiumGlobe({ newResultId }: CesiumGlobeProps) {
     return () => window.removeEventListener('resize', handler);
   }, []);
 
+  // ── Render town name labels ──────────────────────────────────────────────
+  const renderTownLabels = useCallback(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    // Remove old labels
+    for (const e of townLabelsRef.current) {
+      viewer.entities.remove(e);
+    }
+    townLabelsRef.current = [];
+
+    for (const town of VALLEY_TOWNS) {
+      if (!LABELED_TOWNS.has(town.town)) continue;
+
+      const entity = viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(town.lng, town.lat, 0),
+        label: {
+          text: town.town.toUpperCase(),
+          font: "600 11px 'Rajdhani', sans-serif",
+          fillColor: Cesium.Color.fromCssColorString('#E8F0F7'),
+          outlineColor: Cesium.Color.fromCssColorString('#080C10'),
+          outlineWidth: 3,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          pixelOffset: new Cesium.Cartesian2(0, -8),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          scaleByDistance: new Cesium.NearFarScalar(1000, 1.2, 200000, 0.4),
+          translucencyByDistance: new Cesium.NearFarScalar(1000, 1.0, 300000, 0.3),
+        },
+      });
+      townLabelsRef.current.push(entity);
+    }
+  }, []);
+
   // ── Render entity markers ─────────────────────────────────────────────────
   const renderMarkers = useCallback((results: SpeedResult[], highlightId?: string) => {
     const viewer = viewerRef.current;
     if (!viewer || !viewerReadyRef.current) return;
 
-    viewer.entities.removeAll();
+    // Remove pin entities but keep town labels
+    const pinEntities = viewer.entities.values.filter(
+      e => !townLabelsRef.current.includes(e)
+    );
+    for (const e of pinEntities) {
+      viewer.entities.remove(e);
+    }
     setPopup(null);
 
     const clusters = clusterResults(results);
@@ -281,25 +333,60 @@ export function CesiumGlobe({ newResultId }: CesiumGlobeProps) {
     }
   }, [renderMarkers]);
 
-  // ── Cinematic fly-in ──────────────────────────────────────────────────────
+  // ── Slow globe spin (runs until fly-in triggers) ─────────────────────────
+  const startSpin = useCallback(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+    const removeSpin = viewer.clock.onTick.addEventListener(() => {
+      if (flyInFiredRef.current) {
+        removeSpin();
+        spinCallbackRef.current = null;
+        return;
+      }
+      viewer.camera.rotate(Cesium.Cartesian3.UNIT_Z, Cesium.Math.toRadians(0.05));
+    });
+    spinCallbackRef.current = removeSpin;
+  }, []);
+
+  // ── Cinematic fly-in: spinning globe → swoop into valley ────────────────
   const triggerFlyIn = useCallback(() => {
     if (flyInFiredRef.current || !viewerRef.current) return;
     flyInFiredRef.current = true;
+    const viewer = viewerRef.current;
     const mobile = isMobileRef.current;
-    // Shenandoah Valley — Winchester (north) to Roanoke (south), ~200km span
-    // Altitude ~120km with steep pitch gives a nice overhead satellite view
-    viewerRef.current.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(
-        -79.1, 38.2,
-        mobile ? 140000 : 110000
-      ),
+
+    // Stop the spin
+    if (spinCallbackRef.current) {
+      spinCallbackRef.current();
+      spinCallbackRef.current = null;
+    }
+
+    // Phase 1: Fly from space down to a mid-altitude overhead of the valley (~3s)
+    viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(-79.1, 38.3, mobile ? 80000 : 60000),
       orientation: {
         heading: Cesium.Math.toRadians(0),
-        pitch: Cesium.Math.toRadians(mobile ? -70 : -75),
+        pitch: Cesium.Math.toRadians(-70),
         roll: 0,
       },
-      duration: 3.5,
-      easingFunction: Cesium.EasingFunction.QUADRATIC_OUT,
+      duration: 3.0,
+      easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+      complete: () => {
+        // Phase 2: Swoop down to a low angle across the valley ridges (~3s)
+        viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(
+            -79.05, 38.15,
+            mobile ? 6000 : 4500
+          ),
+          orientation: {
+            heading: Cesium.Math.toRadians(mobile ? 10 : 15),
+            pitch: Cesium.Math.toRadians(mobile ? -12 : -10),
+            roll: 0,
+          },
+          duration: 3.0,
+          easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+        });
+      },
     });
   }, []);
 
@@ -308,7 +395,7 @@ export function CesiumGlobe({ newResultId }: CesiumGlobeProps) {
     if (!cesiumContainerRef.current || viewerRef.current) return;
 
     const viewer = new Cesium.Viewer(cesiumContainerRef.current, {
-      // Use default Bing Maps aerial imagery (no API key needed — bundled with CesiumJS)
+      // Default Bing Maps aerial imagery (bundled with CesiumJS via Ion)
       animation: false,
       timeline: false,
       baseLayerPicker: false,
@@ -319,23 +406,46 @@ export function CesiumGlobe({ newResultId }: CesiumGlobeProps) {
       infoBox: false,
       navigationHelpButton: false,
       fullscreenButton: false,
-      skyBox: false as unknown as Cesium.SkyBox,
+      // Enable Cesium World Terrain for real mountain elevation
+      terrain: Cesium.Terrain.fromWorldTerrain({
+        requestVertexNormals: true,
+        requestWaterMask: true,
+      }),
     });
 
     // Dark background outside the globe to match theme
     viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#080C10');
     viewer.scene.globe.enableLighting = false;
 
+    // Keep sky atmosphere for the blue horizon glow
+    if (viewer.scene.skyAtmosphere) {
+      viewer.scene.skyAtmosphere.show = true;
+    }
+
+    // Terrain exaggeration — makes mountain ridges more dramatic
+    viewer.scene.verticalExaggeration = 1.8;
+
     // Disable depth test for labels/billboards so they don't clip into terrain
     viewer.scene.globe.depthTestAgainstTerrain = false;
 
-    // Start zoomed out to see the full globe (fly-in will animate to valley)
+    // Start zoomed out to see the full spinning globe
     viewer.camera.setView({
-      destination: Cesium.Cartesian3.fromDegrees(-78.85, 38.72, 8000000),
+      destination: Cesium.Cartesian3.fromDegrees(-40, 30, 15000000),
+      orientation: {
+        heading: 0,
+        pitch: Cesium.Math.toRadians(-90),
+        roll: 0,
+      },
     });
 
     viewerRef.current = viewer;
     viewerReadyRef.current = true;
+
+    // Start slow globe rotation
+    startSpin();
+
+    // Add town name labels
+    renderTownLabels();
 
     // Render any pre-fetched results
     if (resultsRef.current.length > 0) {
@@ -382,6 +492,8 @@ export function CesiumGlobe({ newResultId }: CesiumGlobeProps) {
     preRenderRef.current = removePreRender;
 
     return () => {
+      if (spinCallbackRef.current) spinCallbackRef.current();
+      spinCallbackRef.current = null;
       eventHandler.destroy();
       handlerRef.current = null;
       if (preRenderRef.current) preRenderRef.current();
@@ -445,20 +557,26 @@ export function CesiumGlobe({ newResultId }: CesiumGlobeProps) {
         resultsRef.current = data;
         renderMarkers(data, newResultId);
 
-        // Fly to the new result
+        // Fly to the new result — same low angle as the valley intro
+        // Offset camera slightly south so the pin lands in the upper half of view
         const newResult = data.find(r => r.id === newResultId);
         const newLat = toNum(newResult?.lat);
         const newLng = toNum(newResult?.lng);
         if (isFinite(newLat) && isFinite(newLng) && newLat !== 0 && viewerRef.current) {
+          const mobile = isMobileRef.current;
           viewerRef.current.camera.flyTo({
-            destination: Cesium.Cartesian3.fromDegrees(newLng, newLat, 15000),
+            destination: Cesium.Cartesian3.fromDegrees(
+              newLng + 0.01,
+              newLat - 0.08,
+              mobile ? 5000 : 4000
+            ),
             orientation: {
-              heading: 0,
-              pitch: Cesium.Math.toRadians(-45),
+              heading: Cesium.Math.toRadians(15),
+              pitch: Cesium.Math.toRadians(-12),
               roll: 0,
             },
             duration: 2.5,
-            easingFunction: Cesium.EasingFunction.QUADRATIC_OUT,
+            easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
           });
         }
       }
@@ -531,33 +649,6 @@ export function CesiumGlobe({ newResultId }: CesiumGlobeProps) {
         </div>
       )}
 
-      {/* Eleven North attribution badge */}
-      <div style={{
-        position: 'absolute',
-        bottom: '12px',
-        right: '12px',
-        background: 'rgba(8,12,16,0.75)',
-        backdropFilter: 'blur(8px)',
-        border: '1px solid #1A2D40',
-        borderRadius: '6px',
-        padding: '4px 10px',
-        zIndex: 10,
-      }}>
-        <a
-          href="https://elevennorth.co"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            fontFamily: "'Orbitron', sans-serif",
-            fontSize: '0.6rem',
-            color: 'var(--accent-signal)',
-            textDecoration: 'none',
-            letterSpacing: '0.06em',
-          }}
-        >
-          ELEVEN NORTH
-        </a>
-      </div>
 
       {/* Mobile hint */}
       {isMobile && (

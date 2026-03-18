@@ -3,6 +3,7 @@ import { supabase, type SpeedResultInsert } from '../lib/supabase';
 import type { SpeedTestResult } from '../lib/speedtest';
 import type { IspInfo } from '../lib/ispDetect';
 import type { TownInfo } from '../lib/geocode';
+import { useAuth } from '../hooks/useAuth';
 
 const CARRIERS = [
   'Comcast / Xfinity',
@@ -26,6 +27,7 @@ interface SubmitFormProps {
 }
 
 export function SubmitForm({ result, ispInfo, townInfo, detectedCarrier, onSubmitted }: SubmitFormProps) {
+  const { user } = useAuth();
   const [username, setUsername] = useState('');
   const [carrier, setCarrier] = useState(detectedCarrier || 'Other');
   const [email, setEmail] = useState('');
@@ -48,6 +50,7 @@ export function SubmitForm({ result, ispInfo, townInfo, detectedCarrier, onSubmi
       region: townInfo?.region ?? ispInfo?.region ?? null,
       lat: townInfo?.lat ?? ispInfo?.lat ?? null,
       lng: townInfo?.lng ?? ispInfo?.lng ?? null,
+      user_email: user?.email ?? (email.trim() ? email.trim().toLowerCase() : null),
     };
 
     try {
@@ -137,21 +140,23 @@ export function SubmitForm({ result, ispInfo, townInfo, detectedCarrier, onSubmi
         </div>
       </div>
 
-      <div>
-        <label style={labelStyle} htmlFor="email">
-          Email <span style={{ color: 'var(--text-ghost)', fontWeight: 400 }}>(optional — for Valley connectivity updates)</span>
-        </label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          placeholder="your@email.com"
-          style={inputStyle}
-          onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent-signal)')}
-          onBlur={e => (e.currentTarget.style.borderColor = 'var(--border-subtle)')}
-        />
-      </div>
+      {!user && (
+        <div>
+          <label style={labelStyle} htmlFor="email">
+            Email <span style={{ color: 'var(--text-ghost)', fontWeight: 400 }}>(optional — link results to your dashboard)</span>
+          </label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="your@email.com"
+            style={inputStyle}
+            onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent-signal)')}
+            onBlur={e => (e.currentTarget.style.borderColor = 'var(--border-subtle)')}
+          />
+        </div>
+      )}
 
       {townInfo && (
         <div style={{

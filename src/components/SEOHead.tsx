@@ -10,7 +10,7 @@ interface SEOHeadProps {
 }
 
 export function SEOHead({ title, description, canonical, ogImage, noIndex, structuredData }: SEOHeadProps) {
-  const image = ogImage || '/og-image.png';
+  const image = ogImage || 'https://shenandoahspeedtest.com/og-image.png';
   const url = canonical || 'https://shenandoahspeedtest.com';
 
   return (

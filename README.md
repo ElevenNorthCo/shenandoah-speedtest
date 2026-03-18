@@ -38,15 +38,23 @@ After the test, you can submit your result to the community map and leaderboard.
 
 ---
 
-## The Map
+## The Globe
 
-The 3D terrain map is the heart of the app. It loads every submitted result as a color-coded pin on an interactive map of the Valley:
+The interactive 3D globe is the heart of the app. Built with [CesiumJS](https://cesium.com/cesiumjs/) and powered by Cesium Ion, it features:
+
+- **Cesium World Imagery** — high-resolution satellite tiles of the Valley
+- **Cesium World Terrain** — real elevation data with vertex normals and water masking, exaggerated 1.5x so the ridgelines pop
+- **Sun lighting & atmosphere** — natural shadows and depth across the mountains
+- **Cinematic fly-in** — the globe starts spinning from space, then swoops down to a low-angle view of the Shenandoah Valley with labeled towns
+- **Full interaction** — drag, rotate, pinch-zoom on mobile or desktop
+
+Every submitted result appears as a color-coded pin:
 
 - **Green** — 100+ Mbps (solid connection)
 - **Amber** — 25–100 Mbps (usable but room to improve)
 - **Red** — under 25 Mbps (this is the problem we're talking about)
 
-Click any pin to see the top results for that town, the average speed, and how many tests have been submitted from there.
+Click any pin to see the top results for that town, the average speed, and how many tests have been submitted from there. When you submit a new result, the globe animates to your location.
 
 ---
 
@@ -78,6 +86,25 @@ If you have ideas, open an issue or reach out.
 [Eleven North](https://elevennorth.co) — a digital studio in the Shenandoah Valley, VA.
 
 We build websites, apps, and AI tools for local businesses. If you need something built, [say hello](https://elevennorth.co).
+
+---
+
+## Tech Stack
+
+- React 19 + Vite + TypeScript
+- CesiumJS with Cesium Ion (3D globe, terrain, imagery)
+- Tailwind CSS v4
+- Supabase (PostgreSQL + Realtime)
+- Cloudflare speed infrastructure (test endpoints)
+
+## Environment Variables
+
+| Variable | Description |
+|---|---|
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon/public key |
+| `VITE_IPINFO_TOKEN` | ipinfo.io token (stored as full URL) |
+| `VITE_CESIUM_ION_TOKEN` | Cesium Ion access token |
 
 ---
 

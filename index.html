@@ -5,6 +5,11 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+    <!-- Preconnect hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://ion.cesium.com" />
+
     <!-- Primary SEO -->
     <title>Shenandoah Valley Speed Test | Free Community Internet Speed Test</title>
     <meta name="description" content="Test your internet speed in the Shenandoah Valley. See how your connection compares to neighbors across the Valley. Free community tool by Eleven North." />
@@ -17,7 +22,7 @@
     <meta property="og:url" content="https://shenandoahspeedtest.com" />
     <meta property="og:title" content="Shenandoah Valley Speed Test" />
     <meta property="og:description" content="How fast is internet in YOUR part of the Valley? Run a free speed test and add your result to the community map." />
-    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image" content="https://shenandoahspeedtest.com/og-image.png" />
     <meta property="og:site_name" content="Shenandoah Valley Speed Test" />
     <meta property="og:locale" content="en_US" />
 
@@ -25,7 +30,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Shenandoah Valley Speed Test" />
     <meta name="twitter:description" content="How fast is internet in YOUR part of the Valley? Free community speed test by Eleven North." />
-    <meta name="twitter:image" content="/og-image.png" />
+    <meta name="twitter:image" content="https://shenandoahspeedtest.com/og-image.png" />
 
     <!-- Local Business Schema Markup -->
     <script type="application/ld+json">
@@ -68,6 +73,84 @@
         "name": "Eleven North",
         "url": "https://elevennorth.co"
       }
+    }
+    </script>
+
+    <!-- FAQPage Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What internet providers are available in the Shenandoah Valley?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Common providers in the Shenandoah Valley include Shentel, Comcast/Xfinity, Starlink, T-Mobile Home Internet, All Points Broadband, Skyline/Skybest, HughesNet, and Viasat. Availability varies significantly by location — many rural areas have limited options."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Why are ISP coverage maps inaccurate for rural Virginia?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "ISP coverage maps are self-reported marketing tools. Providers often claim coverage for entire census blocks even if only one address is served. Real-world speeds and availability often differ dramatically from advertised claims, especially in rural areas."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is Starlink a good option for the Shenandoah Valley?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Starlink provides satellite internet that works almost anywhere. Real speeds reported by Valley users typically range from 50-200 Mbps download. It's often the best option for very rural locations where wired providers don't reach."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does this speed test work?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The test measures three things: ping (latency to a server), download speed (how fast you receive data), and upload speed (how fast you send data). Results are submitted to a community database and plotted on an interactive 3D map."
+          }
+        }
+      ]
+    }
+    </script>
+
+    <!-- Dataset Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Dataset",
+      "name": "Shenandoah Valley Community Internet Speed Data",
+      "description": "Community-submitted internet speed test results from 150+ communities across the Shenandoah Valley region of Virginia and West Virginia.",
+      "url": "https://shenandoahspeedtest.com",
+      "creator": {
+        "@type": "Organization",
+        "name": "Eleven North",
+        "url": "https://elevennorth.co"
+      },
+      "spatialCoverage": {
+        "@type": "Place",
+        "name": "Shenandoah Valley"
+      },
+      "temporalCoverage": "2024/.."
+    }
+    </script>
+
+    <!-- SiteNavigationElement -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SiteNavigationElement",
+      "name": ["Home", "Towns", "About", "Dashboard"],
+      "url": [
+        "https://shenandoahspeedtest.com/",
+        "https://shenandoahspeedtest.com/towns",
+        "https://shenandoahspeedtest.com/about",
+        "https://shenandoahspeedtest.com/dashboard"
+      ]
     }
     </script>
   </head>

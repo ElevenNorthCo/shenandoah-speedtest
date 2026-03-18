@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#080C10"/>
+  <rect x="0" y="0" width="1200" height="4" fill="#00FFB2" opacity="0.6"/>
+  
+  <!-- Accent glow -->
+  <circle cx="600" cy="315" r="200" fill="#00FFB2" opacity="0.03"/>
+  
+  <!-- Title -->
+  <text x="600" y="250" text-anchor="middle" fill="#EAEEF3" font-family="Rajdhani, sans-serif" font-weight="700" font-size="60" letter-spacing="4">
+    SHENANDOAH VALLEY
+  </text>
+  <text x="600" y="320" text-anchor="middle" fill="#00FFB2" font-family="Rajdhani, sans-serif" font-weight="700" font-size="48" letter-spacing="6">
+    SPEED TEST
+  </text>
+  
+  <!-- Tagline -->
+  <text x="600" y="400" text-anchor="middle" fill="#9EAAB8" font-family="Sora, sans-serif" font-weight="300" font-size="20">
+    How fast is internet in YOUR part of the Valley?
+  </text>
+  
+  <!-- URL -->
+  <text x="600" y="540" text-anchor="middle" fill="#3A5570" font-family="Space Mono, monospace" font-size="14" letter-spacing="2">
+    shenandoahspeedtest.com
+  </text>
+  
+  <!-- Bottom border -->
+  <rect x="0" y="626" width="1200" height="4" fill="#00FFB2" opacity="0.3"/>
+</svg>

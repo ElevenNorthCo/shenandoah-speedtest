@@ -2,6 +2,121 @@ import { useState } from 'react';
 import { useLeaderboard, type LeaderboardTab } from '../hooks/useLeaderboard';
 import type { SpeedResult } from '../lib/supabase';
 
+function formatCarrierForPopup(carrier: string | null): string {
+  if (!carrier) return 'Unknown';
+  if (carrier.includes('Shenandoah Telecommunications')) return 'Shentel';
+  if (carrier.includes('T-Mobile Home')) return 'T-Mobile Home Internet';
+  if (carrier.includes('All Points')) return 'All Points Broadband';
+  if (carrier.includes('Comcast')) return 'Comcast/Xfinity';
+  return carrier;
+}
+
+// Detail popup modal
+function LeaderboardPopup({ result, rank, onClose }: { result: SpeedResult; rank: number; onClose: () => void }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0, 0, 0, 0.7)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        padding: '24px',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: '16px',
+          padding: '32px 28px',
+          maxWidth: '420px',
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute', top: '12px', right: '12px',
+            background: 'none', border: 'none', color: 'var(--text-ghost)',
+            fontSize: '1.2rem', cursor: 'pointer', padding: '4px',
+          }}
+        >
+          ✕
+        </button>
+
+        {/* User + rank */}
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '6px' }}>
+            {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`}
+          </div>
+          <h3 style={{
+            fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '1.4rem',
+            color: 'var(--text-primary)', letterSpacing: '0.05em', margin: 0,
+          }}>
+            {result.username}
+          </h3>
+          <span style={{
+            fontFamily: "'Sora', sans-serif", fontSize: '0.75rem', color: 'var(--text-ghost)',
+          }}>
+            {result.town ?? 'Shenandoah Valley'}{result.region ? `, ${result.region}` : ''}
+          </span>
+        </div>
+
+        {/* Speed stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+          <div style={{ textAlign: 'center', background: 'var(--bg-elevated)', borderRadius: '10px', padding: '14px 8px' }}>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 700, color: getSpeedColor(result.download_mbps) }}>
+              {result.download_mbps.toFixed(0)}
+            </div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.55rem', color: 'var(--text-ghost)', marginTop: '2px' }}>MBPS DOWN</div>
+          </div>
+          <div style={{ textAlign: 'center', background: 'var(--bg-elevated)', borderRadius: '10px', padding: '14px 8px' }}>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+              {result.upload_mbps.toFixed(0)}
+            </div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.55rem', color: 'var(--text-ghost)', marginTop: '2px' }}>MBPS UP</div>
+          </div>
+          <div style={{ textAlign: 'center', background: 'var(--bg-elevated)', borderRadius: '10px', padding: '14px 8px' }}>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 700, color: '#38BDF8' }}>
+              {result.ping_ms}
+            </div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.55rem', color: 'var(--text-ghost)', marginTop: '2px' }}>MS PING</div>
+          </div>
+        </div>
+
+        {/* Details */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+            <span style={{ fontFamily: "'Sora', sans-serif", fontSize: '0.8rem', color: 'var(--text-ghost)' }}>Provider</span>
+            <span style={{ fontFamily: "'Sora', sans-serif", fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 500 }}>{formatCarrierForPopup(result.carrier)}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+            <span style={{ fontFamily: "'Sora', sans-serif", fontSize: '0.8rem', color: 'var(--text-ghost)' }}>Tested</span>
+            <span style={{ fontFamily: "'Sora', sans-serif", fontSize: '0.8rem', color: 'var(--text-primary)' }}>{new Date(result.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+          </div>
+          {result.isp_detected && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
+              <span style={{ fontFamily: "'Sora', sans-serif", fontSize: '0.8rem', color: 'var(--text-ghost)' }}>ISP Detected</span>
+              <span style={{ fontFamily: "'Sora', sans-serif", fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{result.isp_detected}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function getRankDisplay(rank: number, isRecent: boolean): React.ReactNode {
   if (!isRecent) {
     if (rank === 1) return <span style={{ fontSize: '1rem' }}>🥇</span>;
@@ -41,7 +156,7 @@ interface LeaderboardRowProps {
   activeTab: LeaderboardTab;
 }
 
-function LeaderboardRow({ result, rank, isNew, activeTab }: LeaderboardRowProps) {
+function LeaderboardRow({ result, rank, isNew, activeTab, onClick }: LeaderboardRowProps & { onClick: () => void }) {
   const primaryMbps = activeTab === 'upload' ? result.upload_mbps : result.download_mbps;
   const isRecent = activeTab === 'recent';
   const borderColor = isRecent ? 'transparent' : getBorderColor(rank);
@@ -49,6 +164,7 @@ function LeaderboardRow({ result, rank, isNew, activeTab }: LeaderboardRowProps)
   return (
     <div
       className={isNew ? 'lb-new-row' : ''}
+      onClick={onClick}
       style={{
         display: 'grid',
         gridTemplateColumns: '36px 1fr 80px 70px 50px 80px',
@@ -59,7 +175,7 @@ function LeaderboardRow({ result, rank, isNew, activeTab }: LeaderboardRowProps)
         borderBottom: '1px solid var(--border-subtle)',
         transition: 'background 0.2s ease',
         borderRadius: (!isRecent && rank <= 3) ? '0 4px 4px 0' : 0,
-        cursor: 'default',
+        cursor: 'pointer',
       }}
       onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-elevated)'}
       onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
@@ -141,6 +257,7 @@ function LeaderboardRow({ result, rank, isNew, activeTab }: LeaderboardRowProps)
 export function Leaderboard() {
   const [activeTab, setActiveTab] = useState<LeaderboardTab>('download');
   const { results, loading, error, newRowId, refetch } = useLeaderboard(activeTab);
+  const [popup, setPopup] = useState<{ result: SpeedResult; rank: number } | null>(null);
 
   const tabs: { id: LeaderboardTab; label: string }[] = [
     { id: 'download', label: 'Top Download' },
@@ -306,9 +423,19 @@ export function Leaderboard() {
             rank={i + 1}
             isNew={result.id === newRowId}
             activeTab={activeTab}
+            onClick={() => setPopup({ result, rank: i + 1 })}
           />
         ))}
       </div>
+
+      {/* Detail popup */}
+      {popup && (
+        <LeaderboardPopup
+          result={popup.result}
+          rank={popup.rank}
+          onClose={() => setPopup(null)}
+        />
+      )}
     </div>
   );
 }

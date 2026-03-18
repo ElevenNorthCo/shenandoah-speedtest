@@ -325,29 +325,31 @@ export function HomePage() {
               gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
               gap: '16px',
             }}>
-              {carriers.map((c) => {
+              {carriers.map((c, i) => {
                 const maxDownload = topCarrier?.avg_download ?? 1;
                 const barWidth = (c.avg_download / maxDownload) * 100;
                 return (
-                  <div key={c.carrier} style={{
+                  <div key={c.carrier} className="provider-card" style={{
                     background: 'var(--bg-surface)',
                     border: '1px solid var(--border-subtle)',
                     borderRadius: '12px',
                     padding: '24px 20px',
                     position: 'relative',
                     overflow: 'hidden',
+                    animationDelay: `${i * 0.1}s`,
                   }}>
                     {/* Performance bar */}
-                    <div style={{
+                    <div className="animated-bar" style={{
                       position: 'absolute',
                       bottom: 0,
                       left: 0,
-                      width: `${barWidth}%`,
                       height: '3px',
                       background: getSpeedColor(c.avg_download),
                       opacity: 0.5,
                       borderRadius: '0 3px 0 0',
-                    }} />
+                      animationDelay: `${i * 0.1 + 0.3}s`,
+                      '--target-width': `${barWidth}%`,
+                    } as React.CSSProperties} />
 
                     <h3 style={{
                       fontFamily: "'Rajdhani', sans-serif",
@@ -484,14 +486,14 @@ export function HomePage() {
               <div className="town-dir-grid" style={{
                 display: 'grid',
                 gridTemplateColumns: '2fr 1fr 1fr 1.2fr 0.8fr 1.2fr',
-                gap: '4px',
-                padding: '8px 12px',
+                gap: '8px',
+                padding: '14px 24px',
                 background: 'var(--bg-elevated)',
-                borderRadius: '8px 8px 0 0',
+                borderRadius: '10px 10px 0 0',
                 borderBottom: '1px solid var(--border-subtle)',
               }}>
-                {['Town', '↓ Down', '↑ Up', 'Top Provider', 'Tests', 'Last Tested'].map(h => (
-                  <span key={h} style={{
+                {['Town', '↓ Down', '↑ Up', 'Top Provider', 'Tests', 'Last Tested'].map((h, i) => (
+                  <span key={h} className={i >= 3 ? 'hide-on-mobile' : ''} style={{
                     fontFamily: "'Space Mono', monospace",
                     fontSize: '0.65rem',
                     color: 'var(--text-ghost)',
@@ -513,8 +515,8 @@ export function HomePage() {
                   <div className="town-dir-grid" style={{
                     display: 'grid',
                     gridTemplateColumns: '2fr 1fr 1fr 1.2fr 0.8fr 1.2fr',
-                    gap: '4px',
-                    padding: '10px 12px',
+                    gap: '8px',
+                    padding: '16px 24px',
                     borderBottom: '1px solid var(--border-subtle)',
                     transition: 'background 0.15s ease',
                     cursor: 'pointer',
@@ -531,13 +533,13 @@ export function HomePage() {
                     <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                       {t.avg_upload}
                     </span>
-                    <span style={{ fontFamily: "'Sora', sans-serif", fontSize: '0.75rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span className="hide-on-mobile" style={{ fontFamily: "'Sora', sans-serif", fontSize: '0.75rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {t.top_carrier ? formatCarrierShort(t.top_carrier) : '—'}
                     </span>
-                    <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.75rem', color: 'var(--text-ghost)' }}>
+                    <span className="hide-on-mobile" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.75rem', color: 'var(--text-ghost)' }}>
                       {t.test_count}
                     </span>
-                    <span style={{ fontFamily: "'Sora', sans-serif", fontSize: '0.7rem', color: 'var(--text-ghost)' }}>
+                    <span className="hide-on-mobile" style={{ fontFamily: "'Sora', sans-serif", fontSize: '0.7rem', color: 'var(--text-ghost)' }}>
                       {new Date(t.last_tested).toLocaleDateString()}
                     </span>
                   </div>
@@ -565,6 +567,29 @@ export function HomePage() {
       </section>
 
       <style>{`
+        @keyframes slideUpFade {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes loadBar {
+          from { width: 0; }
+          to { width: var(--target-width); }
+        }
+        .provider-card {
+          animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          opacity: 0;
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+        }
+        .provider-card:hover {
+          transform: translateY(-4px) scale(1.02);
+          box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+          border-color: var(--accent-signal) !important;
+          z-index: 10;
+        }
+        .animated-bar {
+          animation: loadBar 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          width: 0;
+        }
         @media (max-width: 768px) {
           .map-lb-grid {
             grid-template-columns: 1fr !important;
@@ -578,8 +603,13 @@ export function HomePage() {
           .lb-panel {
             height: 500px !important;
           }
+          .hide-on-mobile {
+            display: none !important;
+          }
           .town-dir-grid {
-            grid-template-columns: 1.5fr 1fr 1fr 0 0 0 !important;
+            grid-template-columns: 2fr 1.2fr 1fr !important;
+            padding-left: 14px !important;
+            padding-right: 14px !important;
           }
         }
       `}</style>

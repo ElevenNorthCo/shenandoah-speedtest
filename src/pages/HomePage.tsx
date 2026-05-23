@@ -81,6 +81,19 @@ export function HomePage() {
         padding: '48px 24px 40px',
         gap: '24px',
       }}>
+        <h1 style={{
+          fontFamily: "'Rajdhani', sans-serif",
+          fontWeight: 700,
+          fontSize: 'clamp(1.1rem, 2.5vw, 1.5rem)',
+          color: 'var(--text-secondary)',
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          textAlign: 'center',
+          margin: 0,
+        }}>
+          Shenandoah Valley Internet Speed Test
+        </h1>
+
         <div className="opacity-0-init animate-fade-in-up animate-delay-200">
           <SpeedGauge
             phase={state.phase}

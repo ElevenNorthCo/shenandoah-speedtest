@@ -218,6 +218,15 @@ export function TownDetailPage() {
 
   const structuredData = [
     generateStructuredData('FAQPage', { questions: faqQuestions }),
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://shenandoahspeedtest.com/' },
+        { '@type': 'ListItem', position: 2, name: 'Towns', item: 'https://shenandoahspeedtest.com/towns' },
+        { '@type': 'ListItem', position: 3, name: town.town, item: `https://shenandoahspeedtest.com/towns/${slug}` },
+      ],
+    },
   ];
 
   const recentResults = results.slice(0, 20);

@@ -6,6 +6,8 @@ import { AboutPage } from './pages/AboutPage';
 import { TownsPage } from './pages/TownsPage';
 import { TownDetailPage } from './pages/TownDetailPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { BlogPage } from './pages/BlogPage';
+import { BlogPostPage } from './pages/BlogPostPage';
 
 function App() {
   return (
@@ -19,6 +21,8 @@ function App() {
           <Route path="/towns" element={<TownsPage />} />
           <Route path="/towns/:slug" element={<TownDetailPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
         </Routes>
       </main>
 

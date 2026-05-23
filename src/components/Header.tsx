@@ -7,7 +7,10 @@ export function Header() {
   const location = useLocation();
   const { user } = useAuth();
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) =>
+    path === '/blog'
+      ? location.pathname === '/blog' || location.pathname.startsWith('/blog/')
+      : location.pathname === path;
 
   const navLinkStyle = (path: string): React.CSSProperties => ({
     fontFamily: "'Sora', sans-serif",
@@ -40,6 +43,15 @@ export function Header() {
         onClick={() => setMenuOpen(false)}
       >
         Towns
+      </Link>
+      <Link
+        to="/blog"
+        style={navLinkStyle('/blog')}
+        onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+        onMouseLeave={e => (e.currentTarget.style.color = isActive('/blog') ? 'var(--accent-signal)' : 'var(--text-secondary)')}
+        onClick={() => setMenuOpen(false)}
+      >
+        Blog
       </Link>
       <Link
         to="/about"

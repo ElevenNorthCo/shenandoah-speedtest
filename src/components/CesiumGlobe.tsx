@@ -24,8 +24,16 @@ interface PopupState {
   y: number;
 }
 
+export interface FocusTarget {
+  town: string | null;
+  lat: number | string | null;
+  lng: number | string | null;
+  ts: number; // forces re-trigger on repeat clicks
+}
+
 interface CesiumGlobeProps {
   newResultId?: string;
+  focusTarget?: FocusTarget;
 }
 
 // ── Pure helpers (ported from SpeedMap) ──────────────────────────────────────────
@@ -179,7 +187,10 @@ const LABELED_TOWNS = new Set([
 
 // ── Component ───────────────────────────────────────────────────────────────────
 
-export function CesiumGlobe({ newResultId }: CesiumGlobeProps) {
+// The valley runs SSW→NNE; camera faces NNE up the corridor for all fly-ins
+const VALLEY_HEADING_DEG = 20;
+
+export function CesiumGlobe({ newResultId, focusTarget }: CesiumGlobeProps) {
   const outerRef = useRef<HTMLDivElement>(null);
   const cesiumContainerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Cesium.Viewer | null>(null);
@@ -390,6 +401,100 @@ export function CesiumGlobe({ newResultId }: CesiumGlobeProps) {
     });
   }, []);
 
+  // ── Shared final framing: camera SSW of the town looking NNE up the
+  // valley, town centered with Massanutten running off to the right ────────
+  const flyToFinalFraming = useCallback((lat: number, lng: number, duration: number, complete?: () => void) => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+    const mobile = isMobileRef.current;
+    viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(
+        lng - 0.04,
+        lat - 0.12,
+        mobile ? 9500 : 8000
+      ),
+      orientation: {
+        heading: Cesium.Math.toRadians(VALLEY_HEADING_DEG),
+        pitch: Cesium.Math.toRadians(-30),
+        roll: 0,
+      },
+      duration,
+      easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+      complete,
+    });
+  }, []);
+
+  // ── Take over the camera from the intro: stop spin, cancel any flight ────
+  const interruptIntro = useCallback(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+    flyInFiredRef.current = true;
+    if (spinCallbackRef.current) {
+      spinCallbackRef.current();
+      spinCallbackRef.current = null;
+    }
+    viewer.camera.cancelFlight();
+  }, []);
+
+  // ── Cinematic fly-in to a submitted result: orbit → dive into the
+  // southern gateway → run up the valley corridor → settle near the town ───
+  const cinematicFlyToResult = useCallback((lat: number, lng: number) => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+    const mobile = isMobileRef.current;
+    const corridorHeading = Cesium.Math.toRadians(VALLEY_HEADING_DEG);
+
+    interruptIntro();
+
+    // Snap out to space above the eastern seaboard so the dive always
+    // starts from orbit, no matter where the camera was.
+    viewer.camera.setView({
+      destination: Cesium.Cartesian3.fromDegrees(lng, lat - 8, 12000000),
+      orientation: {
+        heading: 0,
+        pitch: Cesium.Math.toRadians(-90),
+        roll: 0,
+      },
+    });
+
+    // Small hold so the page's smooth scroll can bring the globe into view
+    // before the dive begins.
+    window.setTimeout(() => {
+      // Phase 1: dive from orbit to high above the valley's southern
+      // gateway, already facing NNE up the corridor
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(-79.15, 37.85, mobile ? 110000 : 90000),
+        orientation: {
+          heading: corridorHeading,
+          pitch: Cesium.Math.toRadians(-50),
+          roll: 0,
+        },
+        duration: 3.0,
+        easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+        complete: () => {
+          // Phase 2: run up the valley corridor, ridges sliding past on
+          // both sides, ending just short of the town
+          viewer.camera.flyTo({
+            destination: Cesium.Cartesian3.fromDegrees(
+              lng - 0.08,
+              lat - 0.40,
+              mobile ? 18000 : 15000
+            ),
+            orientation: {
+              heading: corridorHeading,
+              pitch: Cesium.Math.toRadians(-22),
+              roll: 0,
+            },
+            duration: 3.0,
+            easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+            // Phase 3: settle into the final framing over the town
+            complete: () => flyToFinalFraming(lat, lng, 2.5),
+          });
+        },
+      });
+    }, 600);
+  }, [interruptIntro, flyToFinalFraming]);
+
   // ── Initialize Cesium Viewer ──────────────────────────────────────────────
   useEffect(() => {
     if (!cesiumContainerRef.current || viewerRef.current) return;
@@ -434,8 +539,8 @@ export function CesiumGlobe({ newResultId }: CesiumGlobeProps) {
       viewer.scene.skyAtmosphere.show = true;
     }
 
-    // Terrain exaggeration — makes Shenandoah Valley ridgelines pop on mobile
-    viewer.scene.verticalExaggeration = 1.5;
+    // Terrain exaggeration — makes Shenandoah Valley ridgelines pop
+    viewer.scene.verticalExaggeration = 3.0;
 
     // Disable depth test for labels/billboards so they don't clip into terrain
     viewer.scene.globe.depthTestAgainstTerrain = false;
@@ -569,33 +674,57 @@ export function CesiumGlobe({ newResultId }: CesiumGlobeProps) {
         resultsRef.current = data;
         renderMarkers(data, newResultId);
 
-        // Fly to the new result — same low angle as the valley intro
-        // Offset camera slightly south so the pin lands in the upper half of view
-        const newResult = data.find(r => r.id === newResultId);
-        const newLat = toNum(newResult?.lat);
-        const newLng = toNum(newResult?.lng);
-        if (isFinite(newLat) && isFinite(newLng) && newLat !== 0 && viewerRef.current) {
-          const mobile = isMobileRef.current;
-          viewerRef.current.camera.flyTo({
-            destination: Cesium.Cartesian3.fromDegrees(
-              newLng + 0.01,
-              newLat - 0.08,
-              mobile ? 5000 : 4000
-            ),
-            orientation: {
-              heading: Cesium.Math.toRadians(15),
-              pitch: Cesium.Math.toRadians(-12),
-              roll: 0,
-            },
-            duration: 2.5,
-            easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
-          });
+        // Cinematic fly-in from space to the new result's town — targets the
+        // town cluster center, not the user's exact coordinates
+        const clusters = clusterResults(data);
+        const targetCluster = clusters.find(c =>
+          c.results.some(r => r.id === newResultId)
+        );
+        if (targetCluster && viewerRef.current) {
+          cinematicFlyToResult(targetCluster.lat, targetCluster.lng);
         }
       }
     };
 
     void refresh();
-  }, [newResultId, renderMarkers]);
+  }, [newResultId, renderMarkers, cinematicFlyToResult]);
+
+  // ── Fly to a leaderboard-selected result's town and open its popup ────────
+  useEffect(() => {
+    if (!focusTarget || !viewerReadyRef.current) return;
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    // Resolve target: prefer the town's pin cluster, fall back to the
+    // result's own coords, then the known town center
+    const clusters = clusterResults(resultsRef.current);
+    const townKey = focusTarget.town ?? 'Shenandoah Valley';
+    const cluster = clusters.find(c => c.town === townKey);
+
+    let lat = toNum(focusTarget.lat);
+    let lng = toNum(focusTarget.lng);
+    if (cluster) {
+      lat = cluster.lat;
+      lng = cluster.lng;
+    } else if (!isFinite(lat) || !isFinite(lng) || !isValidCoord(lat, lng)) {
+      const town = VALLEY_TOWNS.find(t => t.town === focusTarget.town);
+      if (!town) return;
+      lat = town.lat;
+      lng = town.lng;
+    }
+
+    interruptIntro();
+    setPopup(null);
+
+    flyToFinalFraming(lat, lng, 3.0, () => {
+      if (!cluster) return;
+      const pos = Cesium.Cartesian3.fromDegrees(cluster.lng, cluster.lat, 0);
+      const screenPos = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, pos);
+      if (screenPos) {
+        setPopup({ cluster, x: screenPos.x, y: screenPos.y });
+      }
+    });
+  }, [focusTarget, interruptIntro, flyToFinalFraming]);
 
   return (
     <div

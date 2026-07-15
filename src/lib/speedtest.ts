@@ -11,12 +11,16 @@ export interface TestProgress {
   progress: number; // 0–100
   currentMbps: number;
   statusMessage: string;
+  pingSampleMs?: number; // individual latency sample as it's measured
+  pingMs?: number; // final ping once measured
+  downloadMbps?: number; // final download once measured
+  uploadMbps?: number; // final upload once measured
 }
 
 type ProgressCallback = (progress: TestProgress) => void;
 
 // Measure ping using HEAD requests to a fast CDN
-async function measurePing(): Promise<number> {
+async function measurePing(onSample?: (ms: number) => void): Promise<number> {
   const targets = [
     'https://www.cloudflare.com/cdn-cgi/trace',
     'https://speed.cloudflare.com/__down?bytes=1',
@@ -30,6 +34,7 @@ async function measurePing(): Promise<number> {
       await fetch(url, { method: 'HEAD', cache: 'no-store' });
       const end = performance.now();
       samples.push(end - start);
+      onSample?.(Math.round(end - start));
     } catch {
       // skip failed sample
     }
@@ -155,8 +160,10 @@ export async function runSpeedTest(onProgress: ProgressCallback): Promise<SpeedT
   onProgress({ phase: 'ping', progress: 5, currentMbps: 0, statusMessage: 'ESTABLISHING CONNECTION...' });
   await new Promise(r => setTimeout(r, 600));
   onProgress({ phase: 'ping', progress: 10, currentMbps: 0, statusMessage: 'MEASURING LATENCY...' });
-  const pingMs = await measurePing();
-  onProgress({ phase: 'ping', progress: 15, currentMbps: 0, statusMessage: `LATENCY: ${pingMs}ms` });
+  const pingMs = await measurePing(ms => {
+    onProgress({ phase: 'ping', progress: 12, currentMbps: 0, statusMessage: 'MEASURING LATENCY...', pingSampleMs: ms });
+  });
+  onProgress({ phase: 'ping', progress: 15, currentMbps: 0, statusMessage: `LATENCY: ${pingMs}ms`, pingMs });
   await new Promise(r => setTimeout(r, 300));
 
   // Phase 2: Download
@@ -176,7 +183,7 @@ export async function runSpeedTest(onProgress: ProgressCallback): Promise<SpeedT
     downloadMbps = 0;
   }
 
-  onProgress({ phase: 'download', progress: 70, currentMbps: downloadMbps, statusMessage: `DOWNLOAD: ${downloadMbps.toFixed(1)} Mbps` });
+  onProgress({ phase: 'download', progress: 70, currentMbps: downloadMbps, statusMessage: `DOWNLOAD: ${downloadMbps.toFixed(1)} Mbps`, downloadMbps });
   await new Promise(r => setTimeout(r, 300));
 
   // Phase 3: Upload
@@ -207,10 +214,10 @@ export async function runSpeedTest(onProgress: ProgressCallback): Promise<SpeedT
 
   void uploadEstimated; // suppress unused warning — used implicitly via fallback path
 
-  onProgress({ phase: 'upload', progress: 98, currentMbps: uploadMbps, statusMessage: `UPLOAD: ${uploadMbps.toFixed(1)} Mbps` });
+  onProgress({ phase: 'upload', progress: 98, currentMbps: uploadMbps, statusMessage: `UPLOAD: ${uploadMbps.toFixed(1)} Mbps`, uploadMbps });
   await new Promise(r => setTimeout(r, 300));
 
-  onProgress({ phase: 'complete', progress: 100, currentMbps: downloadMbps, statusMessage: 'ANALYSIS COMPLETE' });
+  onProgress({ phase: 'complete', progress: 100, currentMbps: downloadMbps, statusMessage: 'ANALYSIS COMPLETE', downloadMbps, uploadMbps, pingMs });
 
   return { downloadMbps, uploadMbps, pingMs };
 }

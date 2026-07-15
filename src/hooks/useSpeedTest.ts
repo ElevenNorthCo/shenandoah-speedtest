@@ -22,6 +22,12 @@ export interface SpeedTestState {
   townInfo: TownInfo | null;
   detectedCarrier: string;
   error: string | null;
+  livePing: number | null;
+  liveDownload: number | null;
+  liveUpload: number | null;
+  pingSamples: number[];
+  downloadSamples: number[];
+  uploadSamples: number[];
 }
 
 const initialState: SpeedTestState = {
@@ -34,6 +40,12 @@ const initialState: SpeedTestState = {
   townInfo: null,
   detectedCarrier: '',
   error: null,
+  livePing: null,
+  liveDownload: null,
+  liveUpload: null,
+  pingSamples: [],
+  downloadSamples: [],
+  uploadSamples: [],
 };
 
 export function useSpeedTest() {
@@ -60,13 +72,27 @@ export function useSpeedTest() {
       // Run the speed test
       const result = await runSpeedTest((progress: TestProgress) => {
         if (abortRef.current) return;
-        setState(prev => ({
-          ...prev,
-          phase: progress.phase,
-          progress: progress.progress,
-          currentMbps: progress.currentMbps,
-          statusMessage: progress.statusMessage,
-        }));
+        setState(prev => {
+          const next: SpeedTestState = {
+            ...prev,
+            phase: progress.phase,
+            progress: progress.progress,
+            currentMbps: progress.currentMbps,
+            statusMessage: progress.statusMessage,
+          };
+          if (progress.pingSampleMs !== undefined) {
+            next.pingSamples = [...prev.pingSamples, progress.pingSampleMs].slice(-24);
+          }
+          if (progress.pingMs !== undefined) next.livePing = progress.pingMs;
+          if (progress.downloadMbps !== undefined) next.liveDownload = progress.downloadMbps;
+          if (progress.uploadMbps !== undefined) next.liveUpload = progress.uploadMbps;
+          if (progress.phase === 'download' && progress.currentMbps > 0) {
+            next.downloadSamples = [...prev.downloadSamples, progress.currentMbps].slice(-48);
+          } else if (progress.phase === 'upload' && progress.currentMbps > 0) {
+            next.uploadSamples = [...prev.uploadSamples, progress.currentMbps].slice(-48);
+          }
+          return next;
+        });
       });
 
       if (abortRef.current) return;
@@ -98,6 +124,9 @@ export function useSpeedTest() {
         townInfo,
         detectedCarrier,
         error: null,
+        livePing: result.pingMs,
+        liveDownload: result.downloadMbps,
+        liveUpload: result.uploadMbps,
       }));
     } catch (err) {
       if (abortRef.current) return;

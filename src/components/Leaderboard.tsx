@@ -254,7 +254,11 @@ function LeaderboardRow({ result, rank, isNew, activeTab, onClick }: Leaderboard
   );
 }
 
-export function Leaderboard() {
+interface LeaderboardProps {
+  onSelectResult?: (result: SpeedResult) => void;
+}
+
+export function Leaderboard({ onSelectResult }: LeaderboardProps) {
   const [activeTab, setActiveTab] = useState<LeaderboardTab>('download');
   const { results, loading, error, newRowId, refetch } = useLeaderboard(activeTab);
   const [popup, setPopup] = useState<{ result: SpeedResult; rank: number } | null>(null);
@@ -423,7 +427,10 @@ export function Leaderboard() {
             rank={i + 1}
             isNew={result.id === newRowId}
             activeTab={activeTab}
-            onClick={() => setPopup({ result, rank: i + 1 })}
+            onClick={() => {
+              setPopup({ result, rank: i + 1 });
+              onSelectResult?.(result);
+            }}
           />
         ))}
       </div>

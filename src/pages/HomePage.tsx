@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SpeedGauge } from '../components/SpeedGauge';
 import { ResultCard } from '../components/ResultCard';
-import { CesiumGlobe } from '../components/CesiumGlobe';
+import { CesiumGlobe, type FocusTarget } from '../components/CesiumGlobe';
+import type { SpeedResult } from '../lib/supabase';
 import { Leaderboard } from '../components/Leaderboard';
 import { SEOHead } from '../components/SEOHead';
 import { useSpeedTest } from '../hooks/useSpeedTest';
+import { useServerInfo } from '../hooks/useServerInfo';
 import { useLiveStats, useCarrierStats, useTownStats } from '../hooks/useStats';
 import { generateCanonicalUrl } from '../lib/seo';
 import { townToSlug } from '../lib/geocode';
@@ -34,11 +36,24 @@ function formatCarrierShort(carrier: string): string {
 
 export function HomePage() {
   const { state, startTest, reset } = useSpeedTest();
+  const serverInfo = useServerInfo();
   const [newResultId, setNewResultId] = useState<string | undefined>();
   const { stats, loading: statsLoading } = useLiveStats();
   const { data: carriers, loading: carriersLoading } = useCarrierStats();
   const { data: towns, loading: townsLoading } = useTownStats();
   const [townSearch, setTownSearch] = useState('');
+  const mapSectionRef = useRef<HTMLElement>(null);
+
+  const [focusTarget, setFocusTarget] = useState<FocusTarget | undefined>();
+
+  const handleSubmitted = (id: string) => {
+    setNewResultId(id);
+    mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleLeaderboardSelect = (result: SpeedResult) => {
+    setFocusTarget({ town: result.town, lat: result.lat, lng: result.lng, ts: Date.now() });
+  };
 
   const isTesting = state.phase !== 'idle' && state.phase !== 'complete' && state.phase !== 'error';
   const showResult = state.phase === 'complete' && state.result !== null;
@@ -78,29 +93,93 @@ export function HomePage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '48px 24px 40px',
-        gap: '24px',
+        padding: 'clamp(28px, 6vw, 48px) 16px 40px',
+        gap: '20px',
       }}>
         <h1 style={{
-          fontFamily: "'Rajdhani', sans-serif",
-          fontWeight: 700,
-          fontSize: 'clamp(1.1rem, 2.5vw, 1.5rem)',
-          color: 'var(--text-secondary)',
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '6px',
           textAlign: 'center',
           margin: 0,
         }}>
-          Shenandoah Valley Internet Speed Test
+          <span style={{
+            fontFamily: "'Space Mono', monospace",
+            fontWeight: 400,
+            fontSize: 'clamp(0.7rem, 2vw, 0.85rem)',
+            color: 'var(--accent-sky)',
+            letterSpacing: '0.45em',
+            textTransform: 'uppercase',
+            marginRight: '-0.45em',
+          }}>
+            Shenandoah Valley
+          </span>
+          <span style={{
+            fontFamily: "'Rajdhani', sans-serif",
+            fontWeight: 700,
+            fontSize: 'clamp(1.7rem, 6vw, 2.5rem)',
+            color: 'var(--text-primary)',
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            marginRight: '-0.18em',
+            lineHeight: 1.1,
+          }}>
+            Internet Speed Test
+          </span>
         </h1>
 
-        <div className="opacity-0-init animate-fade-in-up animate-delay-200">
+        {/* Server / latency line */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontFamily: "'Space Mono', monospace",
+          fontSize: '0.72rem',
+          letterSpacing: '0.06em',
+          color: 'var(--text-secondary)',
+          minHeight: 18,
+        }}>
+          <span style={{
+            width: 7,
+            height: 7,
+            borderRadius: '50%',
+            background: 'var(--accent-signal)',
+            boxShadow: '0 0 8px var(--accent-signal)',
+            flexShrink: 0,
+          }} />
+          <span>
+            Server: <span style={{ color: 'var(--accent-sky)' }}>{serverInfo?.serverCity ?? 'locating...'}</span>
+          </span>
+          {(state.livePing ?? serverInfo?.rttMs) != null && (
+            <>
+              <span style={{ color: 'var(--text-ghost)' }}>·</span>
+              <span style={{ color: 'var(--accent-signal)' }}>
+                {state.livePing ?? serverInfo?.rttMs} ms
+              </span>
+            </>
+          )}
+        </div>
+
+        <div className="opacity-0-init animate-fade-in-up animate-delay-200" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
           <SpeedGauge
             phase={state.phase}
             progress={state.progress}
             currentMbps={state.currentMbps}
             statusMessage={state.statusMessage}
             finalResult={state.result?.downloadMbps}
+            livePing={state.livePing}
+            liveDownload={state.liveDownload}
+            liveUpload={state.liveUpload}
+            pingSamples={state.pingSamples}
+            downloadSamples={state.downloadSamples}
+            uploadSamples={state.uploadSamples}
+            ipAddress={state.ispInfo?.ip || serverInfo?.ip || null}
+            ispLabel={
+              state.detectedCarrier && state.detectedCarrier !== 'Other'
+                ? formatCarrierShort(state.detectedCarrier)
+                : state.ispInfo?.isp ?? null
+            }
           />
         </div>
 
@@ -179,7 +258,7 @@ export function HomePage() {
               townInfo={state.townInfo}
               detectedCarrier={state.detectedCarrier}
               onRetry={handleRetry}
-              onSubmitted={(id) => setNewResultId(id)}
+              onSubmitted={handleSubmitted}
             />
           </div>
         )}
@@ -271,6 +350,7 @@ export function HomePage() {
 
       {/* Map + Leaderboard Section */}
       <section
+        ref={mapSectionRef}
         className="opacity-0-init animate-fade-in animate-delay-600 map-lb-grid"
         style={{
           display: 'grid',
@@ -285,13 +365,13 @@ export function HomePage() {
           padding: '16px',
           height: '100%',
         }}>
-          <CesiumGlobe newResultId={newResultId} />
+          <CesiumGlobe newResultId={newResultId} focusTarget={focusTarget} />
         </div>
         <div
           className="opacity-0-init animate-fade-in animate-delay-800 lb-panel"
           style={{ padding: '16px', height: '100%', overflow: 'hidden' }}
         >
-          <Leaderboard />
+          <Leaderboard onSelectResult={handleLeaderboardSelect} />
         </div>
       </section>
 

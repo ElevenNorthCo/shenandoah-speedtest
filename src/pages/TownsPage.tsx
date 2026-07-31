@@ -26,7 +26,7 @@ export function TownsPage() {
   const [sortBy, setSortBy] = useState<'name' | 'speed' | 'tests'>('name');
 
   // Build lookup map for stats
-  const statsMap = new Map(townStats.map(t => [t.town.toLowerCase(), t]));
+  const statsMap = new Map(townStats.map(t => [`${t.town.toLowerCase()}|${t.region}`, t]));
 
   // Get all parent areas
   const parentAreaNames = Object.keys(PARENT_AREAS).sort();
@@ -43,10 +43,12 @@ export function TownsPage() {
   const filterMatch = (townName: string) =>
     townName.toLowerCase().includes(search.toLowerCase());
 
-  const sortTowns = (towns: string[]) => {
+  const sortTowns = (towns: string[], area?: string) => {
     return [...towns].sort((a, b) => {
-      const sa = statsMap.get(a.toLowerCase());
-      const sb = statsMap.get(b.toLowerCase());
+      const townA = VALLEY_TOWNS.find(t => t.town === a && (!area || t.parentArea === area));
+      const townB = VALLEY_TOWNS.find(t => t.town === b && (!area || t.parentArea === area));
+      const sa = townA ? statsMap.get(`${a.toLowerCase()}|${townA.region}`) : undefined;
+      const sb = townB ? statsMap.get(`${b.toLowerCase()}|${townB.region}`) : undefined;
       if (sortBy === 'speed') {
         return (sb?.avg_download ?? 0) - (sa?.avg_download ?? 0);
       }
@@ -61,7 +63,7 @@ export function TownsPage() {
     <div style={{ background: 'var(--bg-void)', minHeight: '60vh' }}>
       <SEOHead
         title="Internet Speeds by Town | Shenandoah Valley Speed Test"
-        description="Compare internet speeds across every town and community in the Shenandoah Valley. Find the best ISP for Broadway, Luray, Woodstock, Harrisonburg, and 100+ rural communities."
+        description="Compare community-submitted internet speeds across Harrisonburg, Winchester, Luray, Broadway, Woodstock, and 150+ Shenandoah Valley communities."
         canonical={generateCanonicalUrl('/towns')}
       />
 
@@ -146,7 +148,7 @@ export function TownsPage() {
               const areaTowns = PARENT_AREAS[area] ?? [];
               const filtered = areaTowns.filter(filterMatch);
               if (search && filtered.length === 0) return null;
-              const displayTowns = sortTowns(search ? filtered : areaTowns);
+              const displayTowns = sortTowns(search ? filtered : areaTowns, area);
               const isExpanded = expandedAreas.has(area) || search.length > 0;
 
               return (
@@ -159,6 +161,8 @@ export function TownsPage() {
                   {/* Area header */}
                   <button
                     onClick={() => toggleArea(area)}
+                    aria-expanded={isExpanded}
+                    aria-controls={`town-list-${area.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
                     style={{
                       width: '100%',
                       display: 'flex',
@@ -189,13 +193,16 @@ export function TownsPage() {
                     </span>
                   </button>
 
-                  {/* Towns list */}
-                  {isExpanded && (
-                    <div style={{ borderTop: '1px solid var(--border-subtle)' }}>
+                  {/* Keep links in the DOM when collapsed so crawlers and assistive tech can discover every community. */}
+                  <div
+                    id={`town-list-${area.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+                    hidden={!isExpanded}
+                    style={{ borderTop: '1px solid var(--border-subtle)' }}
+                  >
                       {displayTowns.map(townName => {
-                        const stat = statsMap.get(townName.toLowerCase());
-                        const town = VALLEY_TOWNS.find(t => t.town === townName);
-                        const slug = townToSlug(townName);
+                        const town = VALLEY_TOWNS.find(t => t.town === townName && t.parentArea === area);
+                        const stat = town ? statsMap.get(`${townName.toLowerCase()}|${town.region}`) : undefined;
+                        const slug = townToSlug(townName, town?.region);
 
                         return (
                           <Link
@@ -263,8 +270,7 @@ export function TownsPage() {
                           </Link>
                         );
                       })}
-                    </div>
-                  )}
+                  </div>
                 </div>
               );
             })}

@@ -1,16 +1,21 @@
-import { useRef, useState } from 'react';
+import { lazy, Suspense, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SpeedGauge } from '../components/SpeedGauge';
 import { ResultCard } from '../components/ResultCard';
-import { CesiumGlobe, type FocusTarget } from '../components/CesiumGlobe';
+import type { FocusTarget } from '../components/CesiumGlobe';
 import type { SpeedResult } from '../lib/supabase';
 import { Leaderboard } from '../components/Leaderboard';
 import { SEOHead } from '../components/SEOHead';
 import { useSpeedTest } from '../hooks/useSpeedTest';
 import { useServerInfo } from '../hooks/useServerInfo';
 import { useLiveStats, useCarrierStats, useTownStats } from '../hooks/useStats';
-import { generateCanonicalUrl } from '../lib/seo';
+import { generateCanonicalUrl, generateHomeStructuredData, HOME_FAQS } from '../lib/seo';
 import { townToSlug } from '../lib/geocode';
+
+const CesiumGlobe = lazy(() =>
+  import('../components/CesiumGlobe').then((module) => ({ default: module.CesiumGlobe })),
+);
+const homeStructuredData = generateHomeStructuredData();
 
 function getSpeedColor(mbps: number): string {
   if (mbps >= 100) return '#00FFB2';
@@ -83,8 +88,9 @@ export function HomePage() {
     <>
       <SEOHead
         title="Shenandoah Valley Internet Speed Test | Free Community Tool"
-        description="Test your internet speed in the Shenandoah Valley, VA. See real speeds from your neighbors, compare ISPs like Shentel, Starlink, and T-Mobile, and find the best provider for your area. Free forever."
+        description="Test your internet speed in the Shenandoah Valley, VA. Compare real community results and local providers including Shentel, Starlink, and T-Mobile."
         canonical={generateCanonicalUrl('/')}
+        structuredData={homeStructuredData}
       />
 
       {/* Hero Section */}
@@ -365,7 +371,13 @@ export function HomePage() {
           padding: '16px',
           height: '100%',
         }}>
-          <CesiumGlobe newResultId={newResultId} focusTarget={focusTarget} />
+          <Suspense fallback={(
+            <div style={{ display: 'grid', placeItems: 'center', height: '100%', color: 'var(--text-ghost)', fontFamily: "'Space Mono', monospace", fontSize: '0.75rem' }}>
+              LOADING 3D COMMUNITY MAP…
+            </div>
+          )}>
+            <CesiumGlobe newResultId={newResultId} focusTarget={focusTarget} />
+          </Suspense>
         </div>
         <div
           className="opacity-0-init animate-fade-in animate-delay-800 lb-panel"
@@ -602,7 +614,7 @@ export function HomePage() {
               {displayTowns.map(t => (
                 <Link
                   key={t.town}
-                  to={`/towns/${townToSlug(t.town)}`}
+                  to={`/towns/${townToSlug(t.town, t.region)}`}
                   style={{ textDecoration: 'none' }}
                 >
                   <div className="town-dir-grid" style={{
@@ -656,6 +668,73 @@ export function HomePage() {
               )}
             </>
           )}
+        </div>
+      </section>
+
+      {/* Search-visible FAQ content that matches the FAQPage structured data. */}
+      <section style={{
+        padding: '64px 24px',
+        borderTop: '1px solid var(--border-subtle)',
+        borderBottom: '1px solid var(--border-subtle)',
+        background: 'var(--bg-surface)',
+      }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          <h2 style={{
+            fontFamily: "'Rajdhani', sans-serif",
+            fontWeight: 700,
+            fontSize: 'clamp(1.4rem, 3vw, 2rem)',
+            color: 'var(--text-primary)',
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            textAlign: 'center',
+            marginBottom: '10px',
+          }}>
+            Shenandoah Valley Speed Test FAQ
+          </h2>
+          <p style={{
+            fontFamily: "'Sora', sans-serif",
+            fontSize: '0.85rem',
+            color: 'var(--text-ghost)',
+            textAlign: 'center',
+            marginBottom: '32px',
+          }}>
+            Quick answers about local providers, speed results, and community data.
+          </p>
+
+          <div style={{ display: 'grid', gap: '14px' }}>
+            {HOME_FAQS.map((faq) => (
+              <details
+                key={faq.question}
+                style={{
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '10px',
+                  padding: '18px 20px',
+                }}
+              >
+                <summary style={{
+                  cursor: 'pointer',
+                  fontFamily: "'Rajdhani', sans-serif",
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  color: 'var(--text-primary)',
+                  letterSpacing: '0.02em',
+                }}>
+                  {faq.question}
+                </summary>
+                <p style={{
+                  fontFamily: "'Sora', sans-serif",
+                  fontSize: '0.85rem',
+                  fontWeight: 300,
+                  color: 'var(--text-secondary)',
+                  lineHeight: 1.75,
+                  marginTop: '12px',
+                }}>
+                  {faq.answer}
+                </p>
+              </details>
+            ))}
+          </div>
         </div>
       </section>
 

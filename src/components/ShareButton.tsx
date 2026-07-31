@@ -1,3 +1,5 @@
+import { SITE_URL } from '../lib/seo';
+
 interface ShareButtonsProps {
   downloadMbps: number;
   carrier: string;
@@ -8,10 +10,10 @@ export function ShareButtons({ downloadMbps, carrier, town }: ShareButtonsProps)
   const townDisplay = town || 'the Valley';
   const carrierDisplay = carrier || 'my ISP';
 
-  const shareText = `Just tested my internet in ${townDisplay}, VA — ${downloadMbps.toFixed(0)} Mbps ↓ on ${carrierDisplay}.\nSee how your area stacks up 👇\nshenandoahspeedtest.com\n#ShenandoahValley #RuralInternet #ElevenNorth`;
+  const shareText = `Just tested my internet in ${townDisplay}, VA — ${downloadMbps.toFixed(0)} Mbps ↓ on ${carrierDisplay}.\nSee how your area stacks up 👇\nwww.shenandoahspeedtest.com\n#ShenandoahValley #RuralInternet #ElevenNorth`;
 
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
-  const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://shenandoahspeedtest.com')}&quote=${encodeURIComponent(shareText)}`;
+  const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(SITE_URL)}&quote=${encodeURIComponent(shareText)}`;
 
   const buttonBase: React.CSSProperties = {
     display: 'inline-flex',

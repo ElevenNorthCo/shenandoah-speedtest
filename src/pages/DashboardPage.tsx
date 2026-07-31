@@ -470,7 +470,7 @@ export function DashboardPage() {
     <div style={{ background: 'var(--bg-void)', minHeight: '60vh' }}>
       <SEOHead
         title="My Speed Dashboard | Shenandoah Valley Speed Test"
-        description="Track your internet speed performance over time. See trends, compare with neighbors, and get recommendations."
+        description="Sign in to review your personal internet speed history and trends."
         canonical={generateCanonicalUrl('/dashboard')}
         noIndex={true}
       />

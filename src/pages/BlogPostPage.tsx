@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
-import { generateCanonicalUrl } from '../lib/seo';
+import { DEFAULT_OG_IMAGE, generateCanonicalUrl, SITE_URL } from '../lib/seo';
 import { findPostBySlug, type BlogSection } from '../lib/blog';
 
 function renderSection(section: BlogSection, i: number) {
@@ -82,6 +82,12 @@ export function BlogPostPage() {
   if (!post) {
     return (
       <div style={{ padding: '80px 24px', textAlign: 'center', background: 'var(--bg-void)', minHeight: '60vh' }}>
+        <SEOHead
+          title="Article Not Found | Shenandoah Valley Speed Test"
+          description="This broadband article could not be found. Browse all Shenandoah Valley internet guides."
+          canonical={generateCanonicalUrl('/blog')}
+          noIndex={true}
+        />
         <h1 style={{
           fontFamily: "'Rajdhani', sans-serif",
           fontWeight: 700,
@@ -108,23 +114,31 @@ export function BlogPostPage() {
       dateModified: post.date,
       author: {
         '@type': 'Organization',
+        '@id': 'https://elevennorth.co/#organization',
         name: 'Eleven North',
-        url: 'https://elevennorth.co',
+        url: 'https://elevennorth.co/',
       },
       publisher: {
         '@type': 'Organization',
+        '@id': 'https://elevennorth.co/#organization',
         name: 'Eleven North',
-        url: 'https://elevennorth.co',
+        url: 'https://elevennorth.co/',
       },
-      url: `https://shenandoahspeedtest.com/blog/${post.slug}`,
+      image: DEFAULT_OG_IMAGE,
+      mainEntityOfPage: {
+        '@type': 'WebPage',
+        '@id': `${SITE_URL}/blog/${post.slug}`,
+      },
+      url: `${SITE_URL}/blog/${post.slug}`,
+      inLanguage: 'en-US',
     },
     {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://shenandoahspeedtest.com/' },
-        { '@type': 'ListItem', position: 2, name: 'Blog', item: 'https://shenandoahspeedtest.com/blog' },
-        { '@type': 'ListItem', position: 3, name: post.title, item: `https://shenandoahspeedtest.com/blog/${post.slug}` },
+        { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_URL}/` },
+        { '@type': 'ListItem', position: 2, name: 'Blog', item: `${SITE_URL}/blog` },
+        { '@type': 'ListItem', position: 3, name: post.title, item: `${SITE_URL}/blog/${post.slug}` },
       ],
     },
   ];
@@ -132,9 +146,11 @@ export function BlogPostPage() {
   return (
     <div style={{ background: 'var(--bg-void)', minHeight: '60vh' }}>
       <SEOHead
-        title={`${post.title} | Shenandoah Valley Speed Test`}
+        title={post.title}
         description={post.description}
         canonical={generateCanonicalUrl(`/blog/${post.slug}`)}
+        ogType="article"
+        publishedTime={post.date}
         structuredData={structuredData}
       />
 

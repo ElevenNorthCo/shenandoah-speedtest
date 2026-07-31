@@ -2,7 +2,7 @@
 
 A free community internet speed test built for the people of the Shenandoah Valley, Virginia.
 
-**[shenandoahspeedtest.com](https://shenandoahspeedtest.com)**
+**[www.shenandoahspeedtest.com](https://www.shenandoahspeedtest.com)**
 
 ---
 
@@ -76,12 +76,13 @@ Share your test results on X (Twitter) and Facebook with pre-formatted text incl
 
 ### 🔍 SEO & Structured Data
 
-The app is thoroughly optimized for search engines:
+The app is optimized for crawlability and search presentation:
 
-- **Dynamic `<head>` management** — per-page titles, descriptions, canonical URLs, and Open Graph/Twitter Card tags via `react-helmet-async`
-- **JSON-LD structured data** — including `WebApplication`, `LocalBusiness`, `FAQPage`, `Dataset`, and `SiteNavigationElement` schemas
-- **Dynamically generated FAQ** on each town detail page (e.g., "What is the best internet provider in Luray?")
-- **`robots.txt` and `sitemap.xml`** included
+- **Build-time static rendering** — every public route ships meaningful HTML before JavaScript runs
+- **Per-page `<head>` metadata** — unique titles, descriptions, self-referencing canonicals, and Open Graph/Twitter Card tags
+- **Valid JSON-LD** — `WebSite`, `WebApplication`, `Article`, `WebPage`, `BreadcrumbList`, and visible `FAQPage` content
+- **Generated `sitemap.xml`** — canonical `www` URLs stay synchronized with town and blog route data
+- **True 404 responses** — invalid URLs are no longer rewritten to a `200` SPA shell
 - **Correct Open Graph image** sized to 1200×630 for proper social previews
 
 ---

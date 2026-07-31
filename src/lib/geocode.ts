@@ -339,15 +339,24 @@ export async function reverseGeocode(lat: number, lng: number): Promise<TownInfo
  * Generate a URL slug from a town name.
  * e.g., "Singers Glen" → "singers-glen"
  */
-export function townToSlug(name: string): string {
-  return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+export function townToSlug(name: string, region?: string): string {
+  const baseSlug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  const sameName = VALLEY_TOWNS.filter(t => t.town.toLowerCase() === name.toLowerCase());
+
+  // Preserve the original slug for the first-listed community and disambiguate
+  // later same-name communities by state (for example Riverton and Riverton VA).
+  if (sameName.length > 1 && region && sameName[0]?.region !== region) {
+    return `${baseSlug}-${region.toLowerCase()}`;
+  }
+
+  return baseSlug;
 }
 
 /**
  * Find a town by its slug.
  */
 export function findTownBySlug(slug: string): TownInfo | undefined {
-  return VALLEY_TOWNS.find(t => townToSlug(t.town) === slug);
+  return VALLEY_TOWNS.find(t => townToSlug(t.town, t.region) === slug);
 }
 
 export { VALLEY_TOWNS };

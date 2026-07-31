@@ -8,6 +8,7 @@ import { TownDetailPage } from './pages/TownDetailPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { BlogPage } from './pages/BlogPage';
 import { BlogPostPage } from './pages/BlogPostPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
 

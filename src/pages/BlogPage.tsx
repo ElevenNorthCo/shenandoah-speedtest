@@ -8,7 +8,7 @@ export function BlogPage() {
     <div style={{ background: 'var(--bg-void)', minHeight: '60vh' }}>
       <SEOHead
         title="Broadband Blog | Shenandoah Valley Speed Test"
-        description="Guides, data, and advocacy for internet in the Shenandoah Valley. ISP comparisons, rural broadband facts, and tips for home buyers checking connectivity before they move."
+        description="Shenandoah Valley broadband guides covering rural internet, ISP comparisons, community speed data, and connectivity checks for home buyers."
         canonical={generateCanonicalUrl('/blog')}
       />
 

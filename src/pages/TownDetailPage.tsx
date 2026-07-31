@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
-import { generateCanonicalUrl, generateStructuredData } from '../lib/seo';
-import { findTownBySlug, PARENT_AREAS, townToSlug } from '../lib/geocode';
+import { generateCanonicalUrl, generateStructuredData, SITE_URL } from '../lib/seo';
+import { findTownBySlug, PARENT_AREAS, townToSlug, VALLEY_TOWNS } from '../lib/geocode';
 import { supabase, type SpeedResult } from '../lib/supabase';
 
 function getSpeedColor(mbps: number): string {
@@ -100,13 +100,14 @@ export function TownDetailPage() {
   const town = slug ? findTownBySlug(slug) : undefined;
 
   useEffect(() => {
-    if (!town) { setLoading(false); return; }
+    if (!town) return;
 
     const fetch = async () => {
       const { data } = await supabase
         .from('speed_results')
         .select('*')
         .eq('town', town.town)
+        .eq('region', town.region)
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -120,6 +121,12 @@ export function TownDetailPage() {
   if (!town) {
     return (
       <div style={{ padding: '80px 24px', textAlign: 'center', background: 'var(--bg-void)', minHeight: '60vh' }}>
+        <SEOHead
+          title="Community Not Found | Shenandoah Valley Speed Test"
+          description="This community page could not be found. Browse all Shenandoah Valley internet speed test communities."
+          canonical={generateCanonicalUrl('/towns')}
+          noIndex={true}
+        />
         <h1 style={{
           fontFamily: "'Rajdhani', sans-serif",
           fontWeight: 700,
@@ -178,30 +185,26 @@ export function TownDetailPage() {
   const faqQuestions = [
     {
       '@type': 'Question' as const,
-      name: `What is the best internet provider in ${town.town}?`,
+      name: `How can I compare internet providers in ${town.town}?`,
       acceptedAnswer: {
         '@type': 'Answer' as const,
-        text: bestCarrier
-          ? `Based on community speed tests, ${formatCarrierShort(bestCarrier)} currently has the highest average download speed in ${town.town} at ${bestCarrierAvg.toFixed(0)} Mbps.`
-          : `We don't have enough data yet to determine the best provider in ${town.town}. Run a speed test to contribute!`,
+        text: `Use the community-submitted results on this page to compare download speed, upload speed, ping, and provider performance in ${town.town}. Availability can vary by individual address.`,
       },
     },
     {
       '@type': 'Question' as const,
-      name: `What is the average internet speed in ${town.town}?`,
+      name: `How often do internet speed results for ${town.town} update?`,
       acceptedAnswer: {
         '@type': 'Answer' as const,
-        text: totalTests > 0
-          ? `The average download speed in ${town.town} is ${avgDownload.toFixed(1)} Mbps based on ${totalTests} community tests.`
-          : `No speed tests have been submitted for ${town.town} yet. Be the first to test your connection!`,
+        text: `Results update as residents submit new tests. Run tests at different times of day to help build a more representative picture of internet performance in ${town.town}.`,
       },
     },
     {
       '@type': 'Question' as const,
-      name: `Is Starlink available in ${town.town}?`,
+      name: `Can I add my own speed test result for ${town.town}?`,
       acceptedAnswer: {
         '@type': 'Answer' as const,
-        text: `Starlink satellite internet is generally available throughout the Shenandoah Valley, including ${town.town}. Check Starlink's website for current availability and waitlist status in your specific area.`,
+        text: `Yes. Run the free speed test from the home page and submit the result to help neighbors compare real-world internet service in ${town.town}.`,
       },
     },
     {
@@ -210,21 +213,39 @@ export function TownDetailPage() {
       acceptedAnswer: {
         '@type': 'Answer' as const,
         text: nearbyCommunities.length > 0
-          ? `${town.town} is part of the ${parentArea}. Nearby communities include ${nearbyCommunities.slice(0, 3).join(', ')}. Check each community's page for comparative speed data.`
-          : `Compare ${town.town}'s speeds with other Shenandoah Valley communities on our towns directory page.`,
+          ? `${town.town} is grouped with nearby communities including ${nearbyCommunities.slice(0, 3).join(', ')}. Open each community page to compare submitted results.`
+          : `Use the towns directory to compare ${town.town} with other Shenandoah Valley communities.`,
       },
     },
   ];
 
   const structuredData = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${SITE_URL}/towns/${slug}#webpage`,
+      url: `${SITE_URL}/towns/${slug}`,
+      name: `${town.town} Internet Speed Test`,
+      description: `Test internet speed in ${town.town}, ${town.region}, compare community-submitted results, and explore local provider performance.`,
+      inLanguage: 'en-US',
+      about: {
+        '@type': 'Place',
+        name: `${town.town}, ${town.region}`,
+        geo: {
+          '@type': 'GeoCoordinates',
+          latitude: town.lat,
+          longitude: town.lng,
+        },
+      },
+    },
     generateStructuredData('FAQPage', { questions: faqQuestions }),
     {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://shenandoahspeedtest.com/' },
-        { '@type': 'ListItem', position: 2, name: 'Towns', item: 'https://shenandoahspeedtest.com/towns' },
-        { '@type': 'ListItem', position: 3, name: town.town, item: `https://shenandoahspeedtest.com/towns/${slug}` },
+        { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_URL}/` },
+        { '@type': 'ListItem', position: 2, name: 'Towns', item: `${SITE_URL}/towns` },
+        { '@type': 'ListItem', position: 3, name: town.town, item: `${SITE_URL}/towns/${slug}` },
       ],
     },
   ];
@@ -234,8 +255,8 @@ export function TownDetailPage() {
   return (
     <div style={{ background: 'var(--bg-void)', minHeight: '60vh' }}>
       <SEOHead
-        title={`${town.town} Internet Speed Test | Shenandoah Valley`}
-        description={`Real internet speeds in ${town.town}, ${town.region}. ${totalTests > 0 ? `Average ${avgDownload.toFixed(1)} Mbps download.` : ''} ${bestCarrier ? `Best provider: ${formatCarrierShort(bestCarrier)}.` : ''} ${totalTests} community tests.`}
+        title={`${town.town}, ${town.region} Internet Speed Test`}
+        description={`Test your internet speed in ${town.town}, ${town.region}. View community-submitted results, compare local providers, and explore nearby Shenandoah Valley communities.`}
         canonical={generateCanonicalUrl(`/towns/${slug}`)}
         structuredData={structuredData}
       />
@@ -400,7 +421,10 @@ export function TownDetailPage() {
                   {nearbyCommunities.map(name => (
                     <Link
                       key={name}
-                      to={`/towns/${townToSlug(name)}`}
+                      to={`/towns/${townToSlug(
+                        name,
+                        VALLEY_TOWNS.find(t => t.town === name && t.parentArea === parentArea)?.region,
+                      )}`}
                       style={{
                         fontFamily: "'Sora', sans-serif",
                         fontSize: '0.8rem',

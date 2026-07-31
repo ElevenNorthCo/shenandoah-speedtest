@@ -1,4 +1,3 @@
 User-agent: *
 Allow: /
-Disallow: /dashboard
-Sitemap: https://shenandoahspeedtest.com/sitemap.xml
+Sitemap: https://www.shenandoahspeedtest.com/sitemap.xml

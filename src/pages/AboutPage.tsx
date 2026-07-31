@@ -7,7 +7,7 @@ export function AboutPage() {
     <div style={{ background: 'var(--bg-void)' }}>
       <SEOHead
         title="About | Shenandoah Valley Speed Test"
-        description="Why we built a free internet speed test for the Shenandoah Valley — and why real local data matters more than ISP coverage maps."
+        description="Why we built a free internet speed test for the Shenandoah Valley and why real local broadband data matters for residents and home buyers."
         canonical={generateCanonicalUrl('/about')}
       />
 

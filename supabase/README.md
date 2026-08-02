@@ -65,14 +65,10 @@ VITE_MAPBOX_TOKEN=your-mapbox-token    # required for the 3D map
 | lng | numeric(9,6) | Town centroid longitude |
 | created_at | timestamptz | Submission time |
 
-### `email_signups`
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| email | text | Unique email address |
-| username | text | Associated username |
-| created_at | timestamptz | Signup time |
-
 ### RLS Policies
-- `speed_results`: Public SELECT + INSERT (no auth required)
-- `email_signups`: Public INSERT only (emails are never shown publicly)
+- Anonymous visitors can read only the public speed-result columns and submit
+  validated results without an email address.
+- Authenticated users can read only results owned by the verified email in
+  their Supabase Auth JWT and can submit results for that same address.
+- Aggregate views use `security_invoker` so underlying RLS is always enforced.
+- The legacy `email_signups` table has been removed; it was empty and unused.

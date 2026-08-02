@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const productionSiteUrl = (import.meta.env.VITE_SITE_URL as string | undefined)?.trim()
+  || 'https://www.shenandoahspeedtest.com';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -59,10 +61,15 @@ export interface CarrierStats {
 // ── Auth helpers ────────────────────────────────────────────────────────────
 
 export async function signInWithMagicLink(email: string) {
+  // Use the browser origin during local development, but send production users
+  // to the canonical domain even when the app is opened through a deployment
+  // alias or a non-www redirect.
+  const siteUrl = import.meta.env.DEV ? window.location.origin : productionSiteUrl;
+
   return supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${window.location.origin}/dashboard`,
+      emailRedirectTo: new URL('/dashboard', siteUrl).toString(),
     },
   });
 }

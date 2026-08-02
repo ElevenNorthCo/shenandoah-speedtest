@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { generateCanonicalUrl } from '../lib/seo';
 import { useAuth } from '../hooks/useAuth';
-import { supabase, type SpeedResult, type CarrierStats } from '../lib/supabase';
+import { supabase, publicSupabase, PUBLIC_SPEED_RESULT_COLUMNS, type SpeedResult, type CarrierStats } from '../lib/supabase';
 
 function getSpeedColor(mbps: number): string {
   if (mbps >= 100) return '#00FFB2';
@@ -230,13 +230,13 @@ function DashboardView({ userEmail, onSignOut }: { userEmail: string; onSignOut:
     const fetch = async () => {
       const { data } = await supabase
         .from('speed_results')
-        .select('*')
+        .select(PUBLIC_SPEED_RESULT_COLUMNS)
         .eq('user_email', userEmail)
         .order('created_at', { ascending: false });
 
       setResults(data ?? []);
 
-      const { data: cs } = await supabase
+      const { data: cs } = await publicSupabase
         .from('carrier_stats')
         .select('*')
         .order('avg_download', { ascending: false });
@@ -321,7 +321,7 @@ function DashboardView({ userEmail, onSignOut }: { userEmail: string; onSignOut:
       {totalTests === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 24px' }}>
           <p style={{ fontFamily: "'Sora', sans-serif", fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-            No tests linked to your account yet. Run a speed test and enter your email to start tracking.
+            No tests linked to your account yet. Stay signed in, then run a speed test to add it to your private history.
           </p>
           <Link to="/" style={{ fontFamily: "'Sora', sans-serif", color: 'var(--accent-signal)', textDecoration: 'none' }}>
             Run a test →

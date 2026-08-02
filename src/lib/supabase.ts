@@ -7,6 +7,19 @@ const productionSiteUrl = (import.meta.env.VITE_SITE_URL as string | undefined)?
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// Public community data must never inherit a signed-in session. This keeps
+// public leaderboard/map reads on the anon RLS path, while the primary client
+// is reserved for the signed-in user's private dashboard data.
+export const publicSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+  },
+});
+
+export const PUBLIC_SPEED_RESULT_COLUMNS = 'id,username,download_mbps,upload_mbps,ping_ms,carrier,isp_detected,town,region,lat,lng,created_at' as const;
+
 // ── Core result types ───────────────────────────────────────────────────────
 
 export interface SpeedResult {
@@ -25,15 +38,9 @@ export interface SpeedResult {
   created_at: string;
 }
 
-export interface EmailSignup {
-  id: string;
-  email: string;
-  username: string | null;
-  verified: boolean;
-  created_at: string;
-}
-
-export type SpeedResultInsert = Omit<SpeedResult, 'id' | 'created_at'>;
+export type SpeedResultInsert = Omit<SpeedResult, 'id' | 'created_at'> & {
+  user_email?: string | null;
+};
 
 // ── View types ──────────────────────────────────────────────────────────────
 

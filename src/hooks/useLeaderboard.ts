@@ -49,5 +49,12 @@ export function useLeaderboard(tab: LeaderboardTab) {
     void fetchResults();
   }, [fetchResults]);
 
+  // Poll sanitized rows instead of subscribing to raw table payloads, which
+  // could include private columns added to the table in the future.
+  useEffect(() => {
+    const interval = window.setInterval(() => void fetchResults(), 30_000);
+    return () => window.clearInterval(interval);
+  }, [fetchResults]);
+
   return { ...state, refetch: fetchResults };
 }

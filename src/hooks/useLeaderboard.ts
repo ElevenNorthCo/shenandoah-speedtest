@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase, type SpeedResult } from '../lib/supabase';
+import { publicSupabase, PUBLIC_SPEED_RESULT_COLUMNS, type SpeedResult } from '../lib/supabase';
 
 export type LeaderboardTab = 'download' | 'upload' | 'recent';
 
@@ -22,7 +22,7 @@ export function useLeaderboard(tab: LeaderboardTab) {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      let query = supabase.from('speed_results').select('*').limit(50);
+      let query = publicSupabase.from('speed_results').select(PUBLIC_SPEED_RESULT_COLUMNS).limit(50);
 
       if (tab === 'download') {
         query = query.order('download_mbps', { ascending: false });
@@ -48,44 +48,6 @@ export function useLeaderboard(tab: LeaderboardTab) {
   useEffect(() => {
     void fetchResults();
   }, [fetchResults]);
-
-  // Realtime subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel('speed_results_realtime')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'speed_results' },
-        (payload) => {
-          const newRow = payload.new as SpeedResult;
-          setState(prev => {
-            let updated = [newRow, ...prev.results];
-
-            if (tab === 'download') {
-              updated = updated.sort((a, b) => b.download_mbps - a.download_mbps);
-            } else if (tab === 'upload') {
-              updated = updated.sort((a, b) => b.upload_mbps - a.upload_mbps);
-            }
-
-            return {
-              ...prev,
-              results: updated.slice(0, 50),
-              newRowId: newRow.id,
-            };
-          });
-
-          // Clear the flash after 1.5s
-          setTimeout(() => {
-            setState(prev => ({ ...prev, newRowId: null }));
-          }, 1500);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [tab]);
 
   return { ...state, refetch: fetchResults };
 }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
-import { supabase, type SpeedResult } from '../lib/supabase';
+import { publicSupabase, PUBLIC_SPEED_RESULT_COLUMNS, type SpeedResult } from '../lib/supabase';
 import { VALLEY_TOWNS } from '../lib/geocode';
 
 // Set Cesium Ion access token for World Imagery + World Terrain
@@ -325,9 +325,9 @@ export function CesiumGlobe({ newResultId, focusTarget }: CesiumGlobeProps) {
 
   // ── Fetch results from Supabase ───────────────────────────────────────────
   const loadResults = useCallback(async () => {
-    const { data, error } = await supabase
+    const { data, error } = await publicSupabase
       .from('speed_results')
-      .select('*')
+      .select(PUBLIC_SPEED_RESULT_COLUMNS)
       .not('lat', 'is', null)
       .not('lng', 'is', null)
       .order('created_at', { ascending: false })
@@ -657,9 +657,9 @@ export function CesiumGlobe({ newResultId, focusTarget }: CesiumGlobeProps) {
     }
 
     const refresh = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await publicSupabase
         .from('speed_results')
-        .select('*')
+        .select(PUBLIC_SPEED_RESULT_COLUMNS)
         .not('lat', 'is', null)
         .not('lng', 'is', null)
         .order('created_at', { ascending: false })

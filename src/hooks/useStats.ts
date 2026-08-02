@@ -65,7 +65,7 @@ export function useLiveStats() {
         // Total tests
         const { count } = await publicSupabase
           .from('speed_results')
-          .select('*', { count: 'exact', head: true });
+          .select('id', { count: 'exact', head: true });
 
         // Distinct towns
         const { data: towns } = await publicSupabase

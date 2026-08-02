@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
-  const { user } = useAuth();
 
   const isActive = (path: string) =>
     path === '/blog'
@@ -62,17 +60,15 @@ export function Header() {
       >
         About
       </Link>
-      {user && (
-        <Link
-          to="/dashboard"
-          style={navLinkStyle('/dashboard')}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-          onMouseLeave={e => (e.currentTarget.style.color = isActive('/dashboard') ? 'var(--accent-signal)' : 'var(--text-secondary)')}
-          onClick={() => setMenuOpen(false)}
-        >
-          Dashboard
-        </Link>
-      )}
+      <Link
+        to="/dashboard"
+        style={navLinkStyle('/dashboard')}
+        onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+        onMouseLeave={e => (e.currentTarget.style.color = isActive('/dashboard') ? 'var(--accent-signal)' : 'var(--text-secondary)')}
+        onClick={() => setMenuOpen(false)}
+      >
+        Dashboard
+      </Link>
     </>
   );
 
@@ -185,7 +181,8 @@ export function Header() {
         <button
           className="header-hamburger"
           onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle navigation"
+          aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}
+          aria-expanded={menuOpen}
           style={{
             display: 'none',
             background: 'none',

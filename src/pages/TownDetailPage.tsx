@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { generateCanonicalUrl, generateStructuredData, SITE_URL } from '../lib/seo';
 import { findTownBySlug, PARENT_AREAS, townToSlug, VALLEY_TOWNS } from '../lib/geocode';
-import { supabase, type SpeedResult } from '../lib/supabase';
+import { publicSupabase, PUBLIC_SPEED_RESULT_COLUMNS, type SpeedResult } from '../lib/supabase';
 
 function getSpeedColor(mbps: number): string {
   if (mbps >= 100) return '#00FFB2';
@@ -103,9 +103,9 @@ export function TownDetailPage() {
     if (!town) return;
 
     const fetch = async () => {
-      const { data } = await supabase
+      const { data } = await publicSupabase
         .from('speed_results')
-        .select('*')
+        .select(PUBLIC_SPEED_RESULT_COLUMNS)
         .eq('town', town.town)
         .eq('region', town.region)
         .order('created_at', { ascending: false })

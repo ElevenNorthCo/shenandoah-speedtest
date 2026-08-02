@@ -689,7 +689,7 @@ export function CesiumGlobe({ newResultId, focusTarget }: CesiumGlobeProps) {
     void refresh();
   }, [newResultId, renderMarkers, cinematicFlyToResult]);
 
-  // ── Fly to a leaderboard-selected result's town and open its popup ────────
+  // ── Fly to a leaderboard-selected result's town ──────────────────────────
   useEffect(() => {
     if (!focusTarget || !viewerReadyRef.current) return;
     const viewer = viewerRef.current;
@@ -716,14 +716,9 @@ export function CesiumGlobe({ newResultId, focusTarget }: CesiumGlobeProps) {
     interruptIntro();
     setPopup(null);
 
-    flyToFinalFraming(lat, lng, 3.0, () => {
-      if (!cluster) return;
-      const pos = Cesium.Cartesian3.fromDegrees(cluster.lng, cluster.lat, 0);
-      const screenPos = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, pos);
-      if (screenPos) {
-        setPopup({ cluster, x: screenPos.x, y: screenPos.y });
-      }
-    });
+    // The leaderboard already opens an individual result card. Opening the
+    // town-cluster popup here as well stacked two overlays on mobile.
+    flyToFinalFraming(lat, lng, 3.0);
   }, [focusTarget, interruptIntro, flyToFinalFraming]);
 
   return (

@@ -169,6 +169,7 @@ src/
 |---|---|
 | `VITE_SUPABASE_URL` | Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon/public key |
+| `VITE_SITE_URL` | Canonical production URL used for Auth redirects |
 | `VITE_IPINFO_TOKEN` | ipinfo.io token (stored as full URL) |
 | `VITE_CESIUM_ION_TOKEN` | Cesium Ion access token |
 

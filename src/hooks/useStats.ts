@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase, type TownStats, type CarrierStats } from '../lib/supabase';
+import { publicSupabase, type TownStats, type CarrierStats } from '../lib/supabase';
 
 export function useTownStats() {
   const [data, setData] = useState<TownStats[]>([]);
@@ -9,7 +9,7 @@ export function useTownStats() {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const { data: result, error: err } = await supabase
+        const { data: result, error: err } = await publicSupabase
           .from('town_stats')
           .select('*')
           .order('test_count', { ascending: false });
@@ -36,7 +36,7 @@ export function useCarrierStats() {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const { data: result, error: err } = await supabase
+        const { data: result, error: err } = await publicSupabase
           .from('carrier_stats')
           .select('*')
           .order('avg_download', { ascending: false });
@@ -63,12 +63,12 @@ export function useLiveStats() {
     const fetch = async () => {
       try {
         // Total tests
-        const { count } = await supabase
+        const { count } = await publicSupabase
           .from('speed_results')
           .select('*', { count: 'exact', head: true });
 
         // Distinct towns
-        const { data: towns } = await supabase
+        const { data: towns } = await publicSupabase
           .from('speed_results')
           .select('town')
           .not('town', 'is', null);
@@ -76,7 +76,7 @@ export function useLiveStats() {
         const uniqueTowns = new Set(towns?.map(t => t.town) ?? []);
 
         // Distinct carriers
-        const { data: carriers } = await supabase
+        const { data: carriers } = await publicSupabase
           .from('speed_results')
           .select('carrier')
           .not('carrier', 'is', null)

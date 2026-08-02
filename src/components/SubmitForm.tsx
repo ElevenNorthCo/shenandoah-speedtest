@@ -30,7 +30,6 @@ export function SubmitForm({ result, ispInfo, townInfo, detectedCarrier, onSubmi
   const { user } = useAuth();
   const [username, setUsername] = useState('');
   const [carrier, setCarrier] = useState(detectedCarrier || 'Other');
-  const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -50,7 +49,8 @@ export function SubmitForm({ result, ispInfo, townInfo, detectedCarrier, onSubmi
       region: townInfo?.region ?? ispInfo?.region ?? null,
       lat: townInfo?.lat ?? ispInfo?.lat ?? null,
       lng: townInfo?.lng ?? ispInfo?.lng ?? null,
-      user_email: user?.email ?? (email.trim() ? email.trim().toLowerCase() : null),
+      // Only a verified Supabase Auth identity may own a private result.
+      user_email: user?.email?.toLowerCase() ?? null,
     };
 
     try {
@@ -61,14 +61,6 @@ export function SubmitForm({ result, ispInfo, townInfo, detectedCarrier, onSubmi
         .single();
 
       if (insertError) throw insertError;
-
-      // Optionally store email
-      if (email.trim()) {
-        await supabase.from('email_signups').upsert({
-          email: email.trim().toLowerCase(),
-          username: username.trim().slice(0, 30),
-        });
-      }
 
       onSubmitted(data.id);
     } catch (err) {
@@ -141,21 +133,9 @@ export function SubmitForm({ result, ispInfo, townInfo, detectedCarrier, onSubmi
       </div>
 
       {!user && (
-        <div>
-          <label style={labelStyle} htmlFor="email">
-            Email <span style={{ color: 'var(--text-ghost)', fontWeight: 400 }}>(optional — link results to your dashboard)</span>
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="your@email.com"
-            style={inputStyle}
-            onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent-signal)')}
-            onBlur={e => (e.currentTarget.style.borderColor = 'var(--border-subtle)')}
-          />
-        </div>
+        <p style={{ fontFamily: "'Sora', sans-serif", fontSize: '0.75rem', color: 'var(--text-ghost)', lineHeight: 1.6 }}>
+          Want this result in your private history? Sign in through the Dashboard before running your test.
+        </p>
       )}
 
       {townInfo && (

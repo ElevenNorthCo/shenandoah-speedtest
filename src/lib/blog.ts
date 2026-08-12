@@ -3,18 +3,261 @@ export interface BlogPost {
   title: string;
   description: string;
   date: string;
+  dateModified?: string;
   readTime: string;
   category: string;
+  sources?: BlogSource[];
   content: BlogSection[];
 }
 
+export interface BlogSource {
+  label: string;
+  url: string;
+}
+
+export interface BlogLink {
+  label: string;
+  url: string;
+}
+
 export interface BlogSection {
-  type: 'h2' | 'h3' | 'p' | 'ul' | 'callout';
+  type: 'h2' | 'h3' | 'p' | 'ul' | 'callout' | 'image' | 'links';
   text?: string;
   items?: string[];
+  links?: BlogLink[];
+  src?: string;
+  alt?: string;
+  caption?: string;
 }
 
 export const BLOG_POSTS: BlogPost[] = [
+  {
+    slug: 'shentel-speed-test-results-guide',
+    title: 'Shentel Speed Test: How to Read Download, Upload & Ping Results',
+    description:
+      'Run a more accurate Shentel speed test and learn what download speed, upload speed, and ping mean for streaming, gaming, remote work, and rural homes.',
+    date: '2026-08-12',
+    dateModified: '2026-08-12',
+    readTime: '9 min read',
+    category: 'Shentel Guides',
+    sources: [
+      {
+        label: 'Shentel Support: Perform a Speed Test',
+        url: 'https://support.shentel.com/tutorials/getting-started/perform-a-speed-test?device=shentel-myhitron-app',
+      },
+      {
+        label: 'Shentel: How Much Internet Speed Do I Really Need?',
+        url: 'https://www.shentel.com/en/news/2025/may/how-much-internet-speed-do-i-really-need',
+      },
+      {
+        label: 'Shentel: Slow Internet Causes and Solutions',
+        url: 'https://www.shentel.com/en/news/2024/january/how-to-fix-slow-internet',
+      },
+      {
+        label: 'FCC: Broadband Speed Benchmark Increased to 100/20 Mbps',
+        url: 'https://www.fcc.gov/document/fcc-increases-broadband-speed-benchmark',
+      },
+    ],
+    content: [
+      {
+        type: 'p',
+        text: 'If you searched for a Shentel speed test because your connection feels slow, the number on the screen is only the start of the diagnosis. A useful test separates the speed reaching your router from the performance of Wi-Fi inside your home, then compares several results instead of treating one run as a verdict.',
+      },
+      {
+        type: 'callout',
+        text: 'Quick answer: run one test on a computer connected by Ethernet, then run a second test over Wi-Fi where you normally use the internet. Pause downloads, streaming, cloud backups, and VPNs first. Repeat at different times of day. The wired result tests the connection more directly; the Wi-Fi result shows the experience your devices actually receive.',
+      },
+      {
+        type: 'p',
+        text: 'Shenandoah Valley Speed Test is an independent community project and is not owned by or affiliated with Shentel. You can use it to test your connection and contribute an approximate community result that helps neighbors compare real-world service.',
+      },
+      {
+        type: 'links',
+        links: [
+          { label: 'Run the free Shenandoah Valley speed test', url: '/' },
+          { label: 'Compare internet speeds by Shenandoah Valley town', url: '/towns' },
+        ],
+      },
+      {
+        type: 'h2',
+        text: 'What a Shentel Speed Test Measures',
+      },
+      {
+        type: 'image',
+        src: '/blog/shentel-speed-test-metrics.svg',
+        alt: 'Diagram explaining download speed, upload speed, and ping in an internet speed test',
+        caption: 'A speed test measures three different parts of your connection. Faster download and upload are better; lower ping is better.',
+      },
+      {
+        type: 'h3',
+        text: 'Download Speed',
+      },
+      {
+        type: 'p',
+        text: 'Download speed is how quickly data travels from the internet to your device, measured in megabits per second (Mbps). It affects loading websites, streaming video, downloading games, and using several connected devices at once. This is usually the largest number in a residential internet plan.',
+      },
+      {
+        type: 'h3',
+        text: 'Upload Speed',
+      },
+      {
+        type: 'p',
+        text: 'Upload speed is how quickly your device sends data out. It matters for video meetings, sending large files, cloud backups, livestreaming, security cameras, and posting video. A connection can feel fine while watching video but struggle during a Zoom call if its upload capacity is low or already busy.',
+      },
+      {
+        type: 'h3',
+        text: 'Ping or Latency',
+      },
+      {
+        type: 'p',
+        text: 'Ping measures delay in milliseconds (ms). Lower is better. High or unstable latency can cause game lag, delayed voice calls, and sluggish remote-desktop sessions even when the download number looks fast. For gaming, stability often matters more than adding another hundred Mbps of download speed.',
+      },
+      {
+        type: 'h2',
+        text: 'How to Run an Accurate Shentel Speed Test',
+      },
+      {
+        type: 'ul',
+        items: [
+          'Use a laptop or desktop with a gigabit-capable Ethernet port for the baseline test whenever possible.',
+          'Connect directly to the router or gateway with a known-good Ethernet cable.',
+          'Pause streaming, game downloads, cloud backups, security-camera uploads, and large file transfers.',
+          'Disconnect from a work VPN before testing unless the VPN itself is what you are diagnosing.',
+          'Close extra browser tabs and restart the browser if the device has been running for a long time.',
+          'Run at least three tests and use the middle result rather than choosing only the fastest run.',
+          'Repeat once during the day and once during the evening if the slowdown happens mainly at peak hours.',
+        ],
+      },
+      {
+        type: 'p',
+        text: 'Shentel also provides a speed-test option through supported account or router tools. A router-level test can be helpful because it reduces the effect of an older phone, weak Wi-Fi signal, or slow laptop. For an independent comparison, run this community test under the same conditions and record both results.',
+      },
+      {
+        type: 'h2',
+        text: 'What Counts as a Good Result?',
+      },
+      {
+        type: 'p',
+        text: 'There is no single good speed for every household. The right result depends on the number of people and devices using the connection at the same time. Shentel notes that online games themselves may use only a few Mbps, while downloads, livestreaming, and multiple users raise the requirement. The FCC currently uses 100 Mbps download and 20 Mbps upload as its benchmark for advanced fixed broadband, but that policy benchmark is not a promise that every device on Wi-Fi will measure exactly 100/20.',
+      },
+      {
+        type: 'ul',
+        items: [
+          'Email and ordinary browsing: a stable connection matters more than a huge top speed.',
+          'HD or 4K streaming: allow room for every simultaneous stream plus other household traffic.',
+          'Remote work and video calls: pay close attention to upload speed, ping, and packet stability.',
+          'Gaming: low, consistent ping usually matters more during play; high download speed mainly helps with large updates.',
+          'Busy households: compare the combined demand from televisions, phones, computers, cameras, consoles, and smart devices.',
+        ],
+      },
+      {
+        type: 'h2',
+        text: 'Why the Test May Be Slower Than Your Plan',
+      },
+      {
+        type: 'h3',
+        text: 'Wi-Fi Is the Bottleneck',
+      },
+      {
+        type: 'p',
+        text: 'Distance, walls, interference, crowded channels, and older Wi-Fi standards can reduce speed before the connection reaches your device. If Ethernet is fast but Wi-Fi is slow, changing internet plans may not fix the real problem. Start with router placement, device capability, and mesh or access-point coverage.',
+      },
+      {
+        type: 'h3',
+        text: 'Your Device or Cable Tops Out',
+      },
+      {
+        type: 'p',
+        text: 'Older Ethernet ports can be limited to 100 Mbps, and damaged or outdated cables can negotiate at a slower rate. An older phone may also be unable to use the full capacity of a modern plan. Check the connection rate before concluding that the provider is delivering the wrong speed.',
+      },
+      {
+        type: 'h3',
+        text: 'Other Devices Are Using the Connection',
+      },
+      {
+        type: 'p',
+        text: 'A console update, television stream, photo backup, or security camera can consume bandwidth in the background. Heavy uploads can also increase latency for everyone else in the home. Test once with normal household traffic, then once with that traffic paused so you can see the difference.',
+      },
+      {
+        type: 'h3',
+        text: 'The Slowdown Changes by Time of Day',
+      },
+      {
+        type: 'p',
+        text: 'A repeatable evening-only slowdown points to a different problem than a connection that is slow all day. Keep results with the date, time, connection type, and device. A small record is far more useful when troubleshooting than one screenshot without context.',
+      },
+      {
+        type: 'h2',
+        text: 'A Simple Troubleshooting Decision Tree',
+      },
+      {
+        type: 'image',
+        src: '/blog/shentel-speed-test-troubleshooting.svg',
+        alt: 'Decision tree for troubleshooting a slow Shentel speed test result',
+        caption: 'The fastest way to narrow the problem is to compare a wired baseline with your normal Wi-Fi result.',
+      },
+      {
+        type: 'ul',
+        items: [
+          'Wired is fast, Wi-Fi is slow: investigate router location, interference, mesh coverage, and device limitations.',
+          'Wired and Wi-Fi are both slow: reboot the modem or gateway and router, retest with one device, and inspect cables.',
+          'Only one device is slow: update, restart, or test a different device before blaming the connection.',
+          'Every device is slow at the same times: save repeated wired results and contact Shentel support with the evidence.',
+          'Speed is acceptable but calls or games lag: focus on ping spikes, background uploads, Wi-Fi interference, and connection stability.',
+        ],
+      },
+      {
+        type: 'h2',
+        text: 'Compare Your Result With Nearby Communities',
+      },
+      {
+        type: 'p',
+        text: 'A national average cannot tell you what service is like on your road. Internet availability and performance can change between nearby Shenandoah Valley communities, especially outside town limits. Submit your result with an approximate town and provider, then compare it with other community results instead of relying only on an advertised maximum.',
+      },
+      {
+        type: 'links',
+        links: [
+          { label: 'Broadway, VA internet speed results', url: '/towns/broadway' },
+          { label: 'Harrisonburg, VA internet speed results', url: '/towns/harrisonburg' },
+          { label: 'Woodstock, VA internet speed results', url: '/towns/woodstock' },
+          { label: 'Luray, VA internet speed results', url: '/towns/luray' },
+          { label: 'Browse every community page', url: '/towns' },
+        ],
+      },
+      {
+        type: 'h2',
+        text: 'Frequently Asked Questions',
+      },
+      {
+        type: 'h3',
+        text: 'Should I test over Wi-Fi or Ethernet?',
+      },
+      {
+        type: 'p',
+        text: 'Use both. Ethernet gives you the cleaner baseline for the connection reaching the router. Wi-Fi shows what your phone, television, or computer actually experiences in its normal location.',
+      },
+      {
+        type: 'h3',
+        text: 'How many speed tests should I run?',
+      },
+      {
+        type: 'p',
+        text: 'Run at least three under the same conditions, then repeat at the time you normally notice trouble. One test can be affected by a temporary download, browser load, server path, or Wi-Fi fluctuation.',
+      },
+      {
+        type: 'h3',
+        text: 'Why is my phone slower than my wired computer?',
+      },
+      {
+        type: 'p',
+        text: 'The phone may be farther from the router, connected to a more crowded band, or limited by its Wi-Fi hardware. That difference does not automatically mean the internet service itself is slow.',
+      },
+      {
+        type: 'callout',
+        text: 'Test, compare, and document. A wired baseline plus several time-stamped results gives you something useful: evidence you can use to improve Wi-Fi, compare service locally, or explain a repeatable problem to support.',
+      },
+    ],
+  },
   {
     slug: 'best-internet-providers-shenandoah-valley-2025',
     title: 'Best Internet Providers in the Shenandoah Valley (2025 Real Data)',
@@ -199,8 +442,19 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       'ISP coverage maps claim rural Virginia is served. Real community speed tests prove otherwise. Here\'s how the gap between official "coverage" and actual broadband access persists — and what you can do about it.',
     date: '2025-05-15',
+    dateModified: '2026-08-12',
     readTime: '7 min read',
     category: 'Broadband Advocacy',
+    sources: [
+      {
+        label: 'FCC: Broadband Data Collection',
+        url: 'https://www.fcc.gov/BroadbandData',
+      },
+      {
+        label: 'FCC: Broadband Speed Benchmark Increased to 100/20 Mbps',
+        url: 'https://www.fcc.gov/document/fcc-increases-broadband-speed-benchmark',
+      },
+    ],
     content: [
       {
         type: 'p',
@@ -212,11 +466,11 @@ export const BLOG_POSTS: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Internet service providers report their coverage to the FCC using what's called Form 477. Under this system, if an ISP can serve even a single address in a census block, they report the entire census block as covered. A census block can contain dozens of rural households across miles of terrain.",
+        text: 'The FCC now collects fixed-broadband availability through the location-level Broadband Data Collection system, which replaced the older census-block Form 477 approach. That is a meaningful improvement, and consumers can challenge incorrect availability records. But an availability filing still describes where a provider reports it can offer service; it does not measure the speed, reliability, installation experience, or Wi-Fi performance residents actually receive.',
       },
       {
         type: 'p',
-        text: "The result: a household with zero broadband options may live inside a census block that is officially 100% served. They show up as covered in state and federal reports. They are counted as having access to 25/3 Mbps broadband. In reality, they're tethering to a cell phone to run their business.",
+        text: 'That distinction matters in rural communities. A location may appear serviceable while an installation is delayed, the available technology performs poorly, or the usable connection does not match the plan a household needs. In 2024 the FCC raised its fixed-broadband benchmark from 25/3 Mbps to 100/20 Mbps, making old 25/3 language an outdated way to describe modern broadband needs.',
       },
       {
         type: 'h2',
@@ -236,7 +490,7 @@ export const BLOG_POSTS: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The federal Broadband Equity, Access, and Deployment (BEAD) program allocated billions of dollars to states to expand broadband infrastructure. Virginia received $1.49 billion in BEAD funding. The allocations are based on — you guessed it — FCC coverage data. If your neighborhood is incorrectly marked as served, it may be excluded from funding eligibility.",
+        text: 'The federal Broadband Equity, Access, and Deployment program directs funding through states to expand high-speed internet infrastructure. Coverage and challenge data influence which locations are treated as served, underserved, or unserved, so correcting inaccurate availability records remains important for rural communities.',
       },
       {
         type: 'p',

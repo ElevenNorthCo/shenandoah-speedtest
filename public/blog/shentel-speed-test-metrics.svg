@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">The three numbers in an internet speed test</title>
+  <desc id="desc">Download and upload speeds are measured in megabits per second and higher is better. Ping is measured in milliseconds and lower is better.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#080c10"/>
+      <stop offset="1" stop-color="#101d28"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1200" height="675" rx="28" fill="url(#bg)"/>
+  <path d="M0 94H1200M0 581H1200" stroke="#1a2d40"/>
+  <text x="70" y="62" fill="#e8f0f7" font-family="Arial, sans-serif" font-size="28" font-weight="700">READ YOUR SPEED TEST</text>
+  <text x="1130" y="62" fill="#648098" font-family="Arial, sans-serif" font-size="17" text-anchor="end">Higher speed · Lower delay</text>
+
+  <g transform="translate(70 130)">
+    <rect width="325" height="390" rx="22" fill="#0f1923" stroke="#1a2d40" stroke-width="2"/>
+    <circle cx="62" cy="66" r="30" fill="#00ffb2" fill-opacity=".12" stroke="#00ffb2"/>
+    <path d="M62 46v36m-13-13 13 13 13-13" fill="none" stroke="#00ffb2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+    <text x="108" y="61" fill="#e8f0f7" font-family="Arial, sans-serif" font-size="26" font-weight="700">DOWNLOAD</text>
+    <text x="108" y="86" fill="#00ffb2" font-family="Arial, sans-serif" font-size="16" font-weight="700">Mbps · HIGHER IS BETTER</text>
+    <text x="34" y="150" fill="#a7bdd0" font-family="Arial, sans-serif" font-size="19">Data coming to you</text>
+    <path d="M34 177H291" stroke="#1a2d40"/>
+    <text x="34" y="220" fill="#e8f0f7" font-family="Arial, sans-serif" font-size="18">Streaming video</text>
+    <text x="34" y="260" fill="#e8f0f7" font-family="Arial, sans-serif" font-size="18">Loading websites</text>
+    <text x="34" y="300" fill="#e8f0f7" font-family="Arial, sans-serif" font-size="18">Game downloads</text>
+    <text x="34" y="340" fill="#e8f0f7" font-family="Arial, sans-serif" font-size="18">Multiple devices</text>
+  </g>
+
+  <g transform="translate(438 130)">
+    <rect width="325" height="390" rx="22" fill="#0f1923" stroke="#1a2d40" stroke-width="2"/>
+    <circle cx="62" cy="66" r="30" fill="#4fc3f7" fill-opacity=".12" stroke="#4fc3f7"/>
+    <path d="M62 84V48m-13 13 13-13 13 13" fill="none" stroke="#4fc3f7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="108" y="61" fill="#e8f0f7" font-family="Arial, sans-serif" font-size="26" font-weight="700">UPLOAD</text>
+    <text x="108" y="86" fill="#4fc3f7" font-family="Arial, sans-serif" font-size="16" font-weight="700">Mbps · HIGHER IS BETTER</text>
+    <text x="34" y="150" fill="#a7bdd0" font-family="Arial, sans-serif" font-size="19">Data leaving your home</text>
+    <path d="M34 177H291" stroke="#1a2d40"/>
+    <text x="34" y="220" fill="#e8f0f7" font-family="Arial, sans-serif" font-size="18">Video meetings</text>
+    <text x="34" y="260" fill="#e8f0f7" font-family="Arial, sans-serif" font-size="18">Cloud backups</text>
+    <text x="34" y="300" fill="#e8f0f7" font-family="Arial, sans-serif" font-size="18">Sending large files</text>
+    <text x="34" y="340" fill="#e8f0f7" font-family="Arial, sans-serif" font-size="18">Security cameras</text>
+  </g>
+
+  <g transform="translate(806 130)">
+    <rect width="325" height="390" rx="22" fill="#0f1923" stroke="#1a2d40" stroke-width="2"/>
+    <circle cx="62" cy="66" r="30" fill="#ffb24d" fill-opacity=".12" stroke="#ffb24d"/>
+    <path d="M45 66h34m-8-8 8 8-8 8" fill="none" stroke="#ffb24d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="108" y="61" fill="#e8f0f7" font-family="Arial, sans-serif" font-size="26" font-weight="700">PING</text>
+    <text x="108" y="86" fill="#ffb24d" font-family="Arial, sans-serif" font-size="16" font-weight="700">ms · LOWER IS BETTER</text>
+    <text x="34" y="150" fill="#a7bdd0" font-family="Arial, sans-serif" font-size="19">Round-trip delay</text>
+    <path d="M34 177H291" stroke="#1a2d40"/>
+    <text x="34" y="220" fill="#e8f0f7" font-family="Arial, sans-serif" font-size="18">Online gaming</text>
+    <text x="34" y="260" fill="#e8f0f7" font-family="Arial, sans-serif" font-size="18">Voice calls</text>
+    <text x="34" y="300" fill="#e8f0f7" font-family="Arial, sans-serif" font-size="18">Remote desktop</text>
+    <text x="34" y="340" fill="#e8f0f7" font-family="Arial, sans-serif" font-size="18">Connection response</text>
+  </g>
+
+  <text x="600" y="625" fill="#a7bdd0" font-family="Arial, sans-serif" font-size="19" text-anchor="middle">One number cannot describe the whole connection. Read all three together.</text>
+</svg>

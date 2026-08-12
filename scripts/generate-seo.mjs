@@ -84,6 +84,9 @@ function buildHead(meta) {
   if (ogType === 'article' && meta.publishedTime) {
     pieces.push('    <meta data-rh="true" property="article:published_time" content="' + escapeHtml(meta.publishedTime) + '" />');
   }
+  if (ogType === 'article' && meta.modifiedTime) {
+    pieces.push('    <meta data-rh="true" property="article:modified_time" content="' + escapeHtml(meta.modifiedTime) + '" />');
+  }
   for (const item of meta.structuredData || []) {
     pieces.push('    <script data-rh="true" data-seo-generated="true" type="application/ld+json">' + jsonLd(item) + '</script>');
   }
@@ -96,6 +99,7 @@ function buildHead(meta) {
       '.seo-static-shell h1{font-size:clamp(2rem,6vw,3.6rem);line-height:1.1;margin:36px 0 18px}' +
       '.seo-static-shell h2{font-size:1.5rem;margin:34px 0 12px}.seo-static-shell h3{font-size:1.1rem;margin:24px 0 8px}' +
       '.seo-static-shell p,.seo-static-shell li{color:#a7bdd0;line-height:1.75}.seo-static-shell ul{padding-left:22px}' +
+      '.seo-static-shell figure{margin:28px 0}.seo-static-shell img{display:block;max-width:100%;height:auto;border-radius:12px}.seo-static-shell figcaption{color:#648098;font-size:.85rem;margin-top:8px}' +
       '.seo-static-shell .link-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:18px 0}' +
       '.seo-static-shell .card{border:1px solid #1a2d40;border-radius:10px;padding:18px;background:#0f1923}' +
       '.seo-static-shell details{border:1px solid #1a2d40;border-radius:8px;padding:14px;margin:10px 0;background:#0f1923}' +
@@ -230,7 +234,7 @@ function articleStructuredData(post) {
       headline: post.title,
       description: post.description,
       datePublished: post.date,
-      dateModified: post.date,
+      dateModified: post.dateModified || post.date,
       author: {
         '@type': 'Organization',
         '@id': 'https://elevennorth.co/#organization',
@@ -265,6 +269,15 @@ function renderBlogSections(sections) {
     if (section.type === 'h3') return '<h3>' + escapeHtml(section.text || '') + '</h3>';
     if (section.type === 'p') return '<p>' + escapeHtml(section.text || '') + '</p>';
     if (section.type === 'callout') return '<aside class="card"><p>' + escapeHtml(section.text || '') + '</p></aside>';
+    if (section.type === 'image') {
+      return '<figure><img src="' + escapeHtml(section.src || '') + '" alt="' + escapeHtml(section.alt || '') + '" width="1200" height="675" loading="lazy" />' +
+        (section.caption ? '<figcaption>' + escapeHtml(section.caption) + '</figcaption>' : '') + '</figure>';
+    }
+    if (section.type === 'links') {
+      return '<ul>' + (section.links || []).map((link) => (
+        '<li><a href="' + escapeHtml(link.url) + '">' + escapeHtml(link.label) + '</a></li>'
+      )).join('') + '</ul>';
+    }
     if (section.type === 'ul') {
       return '<ul>' + (section.items || []).map((item) => '<li>' + escapeHtml(item) + '</li>').join('') + '</ul>';
     }
@@ -430,6 +443,8 @@ for (const post of posts) {
     description: post.description,
     ogType: 'article',
     publishedTime: post.date,
+    modifiedTime: post.dateModified || post.date,
+    lastModified: post.dateModified || post.date,
     geoRegion: 'US-VA',
     structuredData: articleStructuredData(post),
     body: [
@@ -439,6 +454,11 @@ for (const post of posts) {
       '<p><strong>', escapeHtml(post.category), '</strong> · ', escapeHtml(post.date), ' · ', escapeHtml(post.readTime), '</p>',
       '<p>', escapeHtml(post.description), '</p>',
       renderBlogSections(post.content),
+      post.sources?.length ? [
+        '<section><h2>Sources and further reading</h2><ul>',
+        post.sources.map((source) => '<li><a href="' + escapeHtml(source.url) + '">' + escapeHtml(source.label) + '</a></li>').join(''),
+        '</ul></section>',
+      ].join('') : '',
       '</article>',
     ].join(''),
   });
@@ -511,7 +531,11 @@ for (const route of routes.concat(privateRoutes)) {
 const sitemap = [
   '<?xml version="1.0" encoding="UTF-8"?>',
   '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-  routes.map((route) => '  <url><loc>' + canonicalFor(route.pathname) + '</loc></url>').join('\n'),
+  routes.map((route) => (
+    '  <url><loc>' + canonicalFor(route.pathname) + '</loc>' +
+    (route.lastModified ? '<lastmod>' + route.lastModified + '</lastmod>' : '') +
+    '</url>'
+  )).join('\n'),
   '</urlset>',
   '',
 ].join('\n');

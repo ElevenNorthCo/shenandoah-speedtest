@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Slow internet troubleshooting decision tree</title>
+  <desc id="desc">Start with an Ethernet retest. A fast wired result points to Wi-Fi or device issues. A slow wired result should be repeated after pausing traffic and restarting equipment.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#080c10"/>
+      <stop offset="1" stop-color="#101d28"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0 0L8 3 0 6z" fill="#648098"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="675" rx="28" fill="url(#bg)"/>
+  <text x="70" y="62" fill="#e8f0f7" font-family="Arial, sans-serif" font-size="28" font-weight="700">SLOW RESULT? ISOLATE THE BOTTLENECK</text>
+  <text x="1130" y="62" fill="#648098" font-family="Arial, sans-serif" font-size="17" text-anchor="end">Change one condition at a time</text>
+
+  <g font-family="Arial, sans-serif">
+    <rect x="420" y="105" width="360" height="86" rx="18" fill="#00ffb2" fill-opacity=".1" stroke="#00ffb2" stroke-width="2"/>
+    <text x="600" y="140" fill="#00ffb2" font-size="17" font-weight="700" text-anchor="middle">START HERE</text>
+    <text x="600" y="169" fill="#e8f0f7" font-size="21" font-weight="700" text-anchor="middle">Retest with Ethernet</text>
+
+    <path d="M600 191V237" stroke="#648098" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="430" y="245" width="340" height="80" rx="40" fill="#0f1923" stroke="#4fc3f7" stroke-width="2"/>
+    <text x="600" y="293" fill="#e8f0f7" font-size="22" font-weight="700" text-anchor="middle">Is the wired test fast?</text>
+
+    <path d="M430 285H273V360" stroke="#648098" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+    <text x="353" y="268" fill="#00ffb2" font-size="17" font-weight="700" text-anchor="middle">YES</text>
+    <rect x="95" y="370" width="355" height="160" rx="20" fill="#0f1923" stroke="#00ffb2" stroke-width="2"/>
+    <text x="273" y="410" fill="#00ffb2" font-size="20" font-weight="700" text-anchor="middle">CONNECTION IS REACHING ROUTER</text>
+    <text x="273" y="448" fill="#e8f0f7" font-size="19" text-anchor="middle">Check Wi-Fi distance, walls,</text>
+    <text x="273" y="477" fill="#e8f0f7" font-size="19" text-anchor="middle">interference, mesh coverage,</text>
+    <text x="273" y="506" fill="#e8f0f7" font-size="19" text-anchor="middle">and the slow device itself.</text>
+
+    <path d="M770 285H927V360" stroke="#648098" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+    <text x="847" y="268" fill="#ffb24d" font-size="17" font-weight="700" text-anchor="middle">NO</text>
+    <rect x="750" y="370" width="355" height="160" rx="20" fill="#0f1923" stroke="#ffb24d" stroke-width="2"/>
+    <text x="927" y="410" fill="#ffb24d" font-size="20" font-weight="700" text-anchor="middle">REPEAT A CLEAN BASELINE</text>
+    <text x="927" y="448" fill="#e8f0f7" font-size="19" text-anchor="middle">Pause traffic, restart equipment,</text>
+    <text x="927" y="477" fill="#e8f0f7" font-size="19" text-anchor="middle">inspect cables, then save three</text>
+    <text x="927" y="506" fill="#e8f0f7" font-size="19" text-anchor="middle">time-stamped wired results.</text>
+
+    <path d="M450 450H750" stroke="#1a2d40" stroke-width="2" stroke-dasharray="8 8"/>
+    <circle cx="600" cy="450" r="8" fill="#1a2d40"/>
+
+    <rect x="245" y="570" width="710" height="62" rx="16" fill="#0f1923" stroke="#1a2d40"/>
+    <text x="600" y="596" fill="#a7bdd0" font-size="17" text-anchor="middle">Still slow on every wired retest?</text>
+    <text x="600" y="619" fill="#e8f0f7" font-size="18" font-weight="700" text-anchor="middle">Contact support with the device, time, connection type, and saved results.</text>
+  </g>
+</svg>

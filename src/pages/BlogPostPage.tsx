@@ -70,6 +70,57 @@ function renderSection(section: BlogSection, i: number) {
           {section.text}
         </div>
       );
+    case 'image':
+      return (
+        <figure key={i} style={{ margin: '36px 0' }}>
+          <img
+            src={section.src}
+            alt={section.alt || ''}
+            loading="lazy"
+            width={1200}
+            height={675}
+            style={{
+              display: 'block',
+              width: '100%',
+              height: 'auto',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '12px',
+              background: 'var(--bg-surface)',
+            }}
+          />
+          {section.caption ? (
+            <figcaption style={{
+              fontFamily: "'Sora', sans-serif",
+              fontSize: '0.75rem',
+              color: 'var(--text-ghost)',
+              lineHeight: 1.6,
+              marginTop: '10px',
+            }}>
+              {section.caption}
+            </figcaption>
+          ) : null}
+        </figure>
+      );
+    case 'links':
+      return (
+        <ul key={i} style={{ ...bodyFont, paddingLeft: '20px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {section.links?.map(link => {
+            const external = /^https?:\/\//.test(link.url);
+            return (
+              <li key={link.url} style={{ paddingLeft: '4px' }}>
+                <a
+                  href={link.url}
+                  target={external ? '_blank' : undefined}
+                  rel={external ? 'noopener noreferrer' : undefined}
+                  style={{ color: 'var(--accent-signal)', textUnderlineOffset: '3px' }}
+                >
+                  {link.label}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      );
     default:
       return null;
   }
@@ -111,7 +162,7 @@ export function BlogPostPage() {
       headline: post.title,
       description: post.description,
       datePublished: post.date,
-      dateModified: post.date,
+      dateModified: post.dateModified || post.date,
       author: {
         '@type': 'Organization',
         '@id': 'https://elevennorth.co/#organization',
@@ -151,6 +202,7 @@ export function BlogPostPage() {
         canonical={generateCanonicalUrl(`/blog/${post.slug}`)}
         ogType="article"
         publishedTime={post.date}
+        modifiedTime={post.dateModified}
         structuredData={structuredData}
       />
 
@@ -222,6 +274,47 @@ export function BlogPostPage() {
         <div>
           {post.content.map((section, i) => renderSection(section, i))}
         </div>
+
+        {post.sources?.length ? (
+          <section aria-labelledby="article-sources" style={{
+            marginTop: '48px',
+            padding: '24px',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '12px',
+          }}>
+            <h2 id="article-sources" style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontWeight: 700,
+              fontSize: '1.1rem',
+              color: 'var(--text-primary)',
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              marginBottom: '12px',
+            }}>
+              Sources & Further Reading
+            </h2>
+            <ul style={{ margin: 0, paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {post.sources.map(source => (
+                <li key={source.url} style={{ color: 'var(--text-secondary)' }}>
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      fontFamily: "'Sora', sans-serif",
+                      fontSize: '0.82rem',
+                      color: 'var(--accent-signal)',
+                      textUnderlineOffset: '3px',
+                    }}
+                  >
+                    {source.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
 
         {/* Footer CTA */}
         <div style={{

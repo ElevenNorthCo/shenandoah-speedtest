@@ -8,6 +8,7 @@ interface SEOHeadProps {
   ogImage?: string;
   ogType?: 'website' | 'article';
   publishedTime?: string;
+  modifiedTime?: string;
   noIndex?: boolean;
   structuredData?: object[];
 }
@@ -19,6 +20,7 @@ export function SEOHead({
   ogImage,
   ogType = 'website',
   publishedTime,
+  modifiedTime,
   noIndex,
   structuredData,
 }: SEOHeadProps) {
@@ -50,6 +52,9 @@ export function SEOHead({
       <meta property="og:locale" content="en_US" />
       {ogType === 'article' && publishedTime && (
         <meta property="article:published_time" content={publishedTime} />
+      )}
+      {ogType === 'article' && modifiedTime && (
+        <meta property="article:modified_time" content={modifiedTime} />
       )}
 
       {/* Twitter */}

@@ -102,6 +102,15 @@ const vercelConfig = JSON.parse(await readFile(path.join(projectRoot, 'vercel.js
 if (vercelConfig.cleanUrls !== true) errors.push('vercel.json must enable cleanUrls');
 if (vercelConfig.trailingSlash !== false) errors.push('vercel.json must disable trailing slashes');
 if (vercelConfig.rewrites) errors.push('vercel.json still contains a catch-all SPA rewrite');
+const canonicalHostRedirect = vercelConfig.redirects?.find((redirect) => (
+  redirect.source === '/:path*' &&
+  redirect.destination === siteUrl + '/:path*' &&
+  redirect.permanent === true &&
+  redirect.has?.some((condition) => condition.type === 'host' && condition.value === 'shenandoahspeedtest.com')
+));
+if (!canonicalHostRedirect) {
+  errors.push('vercel.json is missing the permanent non-www to www host redirect');
+}
 
 const rootHtml = await readFile(path.join(distDir, 'index.html'), 'utf8');
 if (!rootHtml.includes('"@type":"WebApplication"')) {
@@ -109,6 +118,18 @@ if (!rootHtml.includes('"@type":"WebApplication"')) {
 }
 if (!rootHtml.includes('"@type":"FAQPage"')) {
   errors.push('Home page is missing visible FAQ structured data');
+}
+
+const shentelGuidePath = path.join(distDir, 'blog', 'shentel-speed-test-results-guide.html');
+const shentelGuideHtml = await readFile(shentelGuidePath, 'utf8');
+if (!shentelGuideHtml.includes('article:modified_time')) {
+  errors.push('Shentel speed test guide is missing article modified-time metadata');
+}
+if (!shentelGuideHtml.includes('/blog/shentel-speed-test-metrics.svg')) {
+  errors.push('Shentel speed test guide is missing its crawlable metrics diagram');
+}
+if (!sitemap.includes('<lastmod>2026-08-12</lastmod>')) {
+  errors.push('sitemap.xml is missing the Shentel guide last-modified date');
 }
 
 const townsHtml = await readFile(path.join(distDir, 'towns.html'), 'utf8');

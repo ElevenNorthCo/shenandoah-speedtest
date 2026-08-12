@@ -3,5 +3,18 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "shenandoahspeedtest.com"
+        }
+      ],
+      "destination": "https://www.shenandoahspeedtest.com/:path*",
+      "permanent": true
+    }
+  ]
 }
